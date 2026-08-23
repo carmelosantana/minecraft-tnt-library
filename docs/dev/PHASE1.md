@@ -1,5 +1,7 @@
 # Phase 1 — Framework + Water Bomb (dev gate task list)
 
+> **STATUS: COMPLETE (2026-08-23).** All of T1–T6 landed; `mvn clean verify` green at **86 tests**; single-plugin runtime verification (gate 7a) passed on a disposable Legendary stack (plugin green with Geyser/Floodgate/ViaVersion). Follow-up nits: (a) `core.CustomTnt` → `detonation.DetonationContext` soft package cycle, tidy later; (b) real textures + resource-pack pipeline pending the asset track; (c) redstone/fire ignition deferred (flint & steel only this phase).
+
 Scope: prove the whole path end-to-end — item → display-entity rig → ignite → detonate → (placeholder) assets. Later phases (Smart+Twins, F+G, White Out) are separate dev runs.
 
 Textures are **placeholder** this phase (art-direction track runs in parallel); the framework must accept a real `item_model` + block model later without rework.

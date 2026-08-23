@@ -134,24 +134,41 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ## 4. Compatibility
 
-- [ ] Java 25/Paper 26.1.2 build 74 compile succeeds and `plugin.yml` uses `api-version: '26.1'`, matching the API compiled against (see `PLUGIN_LIFECYCLE.md` §4 — a lower value opts the JAR into Paper's `Commodore` bytecode rewrites).
-- [ ] Hard dependencies, soft dependencies, optional APIs, and load ordering were reviewed and declared.
-- [ ] Geyser/Floodgate/ViaVersion review covers Bedrock-safe input, UI, inventory, identity, and protocol behavior.
+- [x] Java 25/Paper 26.1.2 build 74 compile succeeds and `plugin.yml` uses `api-version: '26.1'`, matching the API compiled against. → `mvn clean verify` green (Java 25, paper-api 26.1.2.build.74); embedded `plugin.yml` `api-version: '26.1'`; runtime Paper 26.1.2 loaded the plugin green.
+- [x] Hard dependencies, soft dependencies, optional APIs, and load ordering were reviewed and declared. → only compile dep is `paper-api` (provided). `softdepend: [WorldGuard, GriefPrevention]`. Geyser/Floodgate not declared as depend/softdepend by design (asset install belongs in `onLoad`, wrong phase for a depend); Phase-1 Geyser/Floodgate use is reflective/none. No hard deps.
+- [x] Geyser/Floodgate/ViaVersion review covers Bedrock-safe input, UI, inventory, identity, and protocol behavior. → placed bomb is a **display-entity rig** (renders on Bedrock via Geyser with no client pack); all effects server-authoritative (explosion/velocity/block changes), feedback via action-bar/chat `Component` + sounds (no Java-only chat-input, no custom attributes). Runtime: floodgate, Geyser-Spigot, ViaVersion all booted **green** alongside TNTLibrary on one stack. **Client-render of the rig/item on a real Bedrock client is not headlessly verifiable — deferred to the gate-12 play-test (see §7 note).**
 
 ## 5. External services
 
-- [ ] External integrations are disabled by default or require explicit configuration and have bounded timeouts.
-- [ ] Ollama/Umami-style external endpoints are optional and failure-tolerant when applicable.
-- [ ] Endpoint failure cannot fail server/plugin startup, and diagnostics redact secrets.
+- [x] External integrations are disabled by default or require explicit configuration and have bounded timeouts. → **none** — no Ollama/Umami/network calls. WorldGuard/GriefPrevention are optional in-process plugin soft-depends, not network services; Phase-1 `ProtectionService` is `AllowAllProtection` and protection is inherited via native explosion filtering.
+- [x] Ollama/Umami-style external endpoints are optional and failure-tolerant when applicable. → N/A, no external endpoints.
+- [x] Endpoint failure cannot fail server/plugin startup, and diagnostics redact secrets. → no endpoints; runtime log scan showed no secrets and no errors on enable.
 
 ## 6. Tests and build
 
-- [ ] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable.
-- [ ] `PluginDescriptorTest` parses `plugin.yml` and `config.yml` with SnakeYAML and asserts `name`, `main`, a `String`-typed `api-version`, a fully-substituted `version`, every command the code looks up, every permission the code checks, and the declared soft dependencies.
-- [ ] `mvn --batch-mode --no-transfer-progress clean verify` succeeds.
-- [ ] The shaded releasable JAR and embedded `plugin.yml` were inspected; `original-*` JARs are excluded.
+- [x] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable. → **86 tests** across core (registry/keys/recipe-spec), config (never-throws parsing, bad-value defaults, provider), item (recipe shape/id), rig (state/geometry/handle), detonation (crater/rim math), command (subcommand routing, amount parsing, permission constants).
+- [x] `PluginDescriptorTest` parses `plugin.yml` and `config.yml` with SnakeYAML and asserts `name`, `main`, a `String`-typed `api-version`, a fully-substituted `version`, every command the code looks up, every permission the code checks, and the declared soft dependencies. → present; asserts `tntlibrary` command and `tntlibrary.admin` / `.command.give` / `.command.reload` / `.use.waterbomb` (the nodes the command + listeners check) and `WorldGuard` softdepend.
+- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds. → BUILD SUCCESS, 86 tests, 0 failures.
+- [x] The shaded releasable JAR and embedded `plugin.yml` were inspected; `original-*` JARs are excluded. → `target/tnt-library-0.1.0.jar`; embedded `plugin.yml` `version: '0.1.0'` (substituted), correct main/api-version/commands/permissions; **0** `org/bukkit` or `io/papermc` classes bundled (provided scope correct); `original-tnt-library-0.1.0.jar` is the pre-shade intermediate, not a release asset.
 
 ## 7. Matrix
+
+### 7a — single-plugin runtime verification (dev gate) — DONE
+
+Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via `scripts/test-stack.sh up` (exit 0 — Paper logged `Done (15.084s)`, the Java port served a real Minecraft handshake at protocol 775 / Paper 26.1.2, and RCON `plugins` listed **`TNTLibrary` green** alongside **floodgate, Geyser-Spigot, ViaVersion** — all green, whole cross-play stack up together). Exercised over RCON:
+
+- `/tntlibrary list` → `Registered bombs (1): waterbomb [enabled]`.
+- `/tntlibrary reload` → `reloaded; 1 bomb(s) registered [waterbomb]` (config re-read path works).
+- `/tntlibrary give waterbomb` (no player) → graceful console error; `give waterbomb Ghost 5` (offline) → graceful "player not found" error.
+- Log scan: **no exceptions, no SEVERE, no leaked secrets**; clean `Loading`/`Enabling`/`enabled — 1 bomb(s) registered` lines. Torn down with `down` (slot released, no leak).
+
+**Behaviors NOT reachable headlessly — gate-12 play-test obligation (real Java + Bedrock client on `play.xpfarm.org`):**
+- Crafting the Water Bomb (TNT + 4 water buckets) actually yields the item.
+- Placing the item spawns the display-entity rig (no vanilla TNT) and consumes one item; the rig renders on Java **and** Bedrock.
+- Flint & steel right-click primes → fuse → explosion → **crater floods with permanent water sources to the rim** (and Nether skips the fill); WG/GriefPrevention actually spare protected regions.
+- Custom item/rig **texture rendering** (placeholder `Material.TNT` cube this phase; real art lands with the asset track).
+
+### 7b — full-roster matrix — NOT RUN (out-of-band, not required for this release)
 
 - [ ] Fresh-volume [Legendary Java Minecraft Geyser Floodgate stack](https://github.com/TheRemote/Legendary-Java-Minecraft-Geyser-Floodgate) test covers every updater-managed plugin.
 - [ ] Each updater-managed plugin's manifest `enabled` value, default state, and expected fresh-volume behavior are recorded separately.
