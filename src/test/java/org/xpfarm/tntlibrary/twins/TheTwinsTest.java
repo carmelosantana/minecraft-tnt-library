@@ -10,6 +10,7 @@
 package org.xpfarm.tntlibrary.twins;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,18 @@ final class TheTwinsTest {
         RecipeSpec spec = twin(TwinColor.BLACK).recipeSpec();
         assertEquals(List.of("K K", " T ", "K K"), spec.rows());
         assertEquals(Map.of('K', Material.BLACK_WOOL, 'T', Material.TNT), spec.ingredients());
+    }
+
+    @Test
+    void constructorRejectsNullColour() {
+        assertThrows(NullPointerException.class,
+                () -> new TheTwins(null, 90, 3, 32.0, new PlacedTwinIndex()));
+    }
+
+    @Test
+    void constructorRejectsNullIndex() {
+        assertThrows(NullPointerException.class,
+                () -> new TheTwins(TwinColor.WHITE, 90, 3, 32.0, null));
     }
 
     @Test

@@ -12,6 +12,7 @@ package org.xpfarm.tntlibrary.twins;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -124,11 +125,11 @@ public final class TheTwins implements CustomTnt {
      */
     public TheTwins(TwinColor color, int fuseTicks, int beamThickness,
             double maxPairDistance, PlacedTwinIndex index) {
-        this.color = color;
+        this.color = Objects.requireNonNull(color, "color");
         this.fuseTicks = fuseTicks;
         this.beamThickness = beamThickness;
         this.maxPairDistance = maxPairDistance;
-        this.index = index;
+        this.index = Objects.requireNonNull(index, "index");
     }
 
     @Override
