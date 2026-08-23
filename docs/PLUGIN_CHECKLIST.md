@@ -6,7 +6,7 @@ Copy this file for one plugin and replace every `<...>` field. Leave an unchecke
 - Slug: `tnt-library`
 - Repository: `carmelosantana/minecraft-tnt-library`
 - Owner: `Carmelo Santana`
-- Target version: `0.1.1`
+- Target version: `0.2.0`
 - Paper version: `26.1.2 build 74`
 - Java version: `25`
 - Updater destination: `tnt-library.jar`
@@ -147,9 +147,9 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ## 6. Tests and build
 
-- [x] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable. → **118 tests** across core (registry/keys/recipe-spec), config (never-throws parsing, bad-value defaults, provider, **`PackDefaults` classpath load + `${...}`-placeholder coercion, and the full `resource-pack.url`/`.sha1` resolution order in `ResourcePackResolutionTest`**), item (recipe shape/id), block (the note_block state-claim table: completeness vs. `BombType`, distinct notes, round-trip, canonical key), detonation (crater/rim math), command (subcommand routing, amount parsing, permission constants), and **delivery (the join-time Adventure `ResourcePackRequest` factory, the pure `PackDeliveryDecision`, and the reflective `BedrockDetector`)**. (v0.1.1 adds the resource-pack delivery + PackSquash pipeline on top of the v0.1.0 real-block re-architecture.)
+- [x] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable. → **118 tests** across core (registry/keys/recipe-spec), config (never-throws parsing, bad-value defaults, provider, **`PackDefaults` classpath load + `${...}`-placeholder coercion, and the full `resource-pack.url`/`.sha1` resolution order in `ResourcePackResolutionTest`**), item (recipe shape/id), block (the note_block state-claim table: completeness vs. `BombType`, distinct notes, round-trip, canonical key), detonation (crater/rim math), command (subcommand routing, amount parsing, permission constants), and **delivery (the join-time Adventure `ResourcePackRequest` factory, the pure `PackDeliveryDecision`, and the reflective `BedrockDetector`)**. **v0.2.0 adds Phase 2 — 265 tests total**, with the isolated, headless-tested **Twins** package (`TwinColor`/variant mapping, `PlacedTwinIndex`, `TwinsPairing`, `TwinsBeam`, `TwinsPlan`, `TheTwins`) and **Smart Bomb** package (`SmartBombParams`/`ParamCodec`, `YamlSmartBombStore`, `TriggerEvaluator` incl. the time reach/cross + proximity inner-threshold regression pins, `ProximityWarning`, `SmartBombDefaults`), both developed via subagent-driven development (opus implementer + reviewer per task). (v0.1.1 added the resource-pack delivery + PackSquash pipeline on top of the v0.1.0 real-block re-architecture.)
 - [x] `PluginDescriptorTest` parses `plugin.yml` and `config.yml` with SnakeYAML and asserts `name`, `main`, a `String`-typed `api-version`, a fully-substituted `version`, every command the code looks up, every permission the code checks, and the declared soft dependencies. → present; asserts `tntlibrary` command and `tntlibrary.admin` / `.command.give` / `.command.reload` / `.use.waterbomb` (the nodes the command + listeners check) and `WorldGuard` softdepend.
-- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds. → BUILD SUCCESS, 118 tests, 0 failures. Verified green under all three pack-hash conditions: empty (plain local build), the literal `${tnt.pack.sha1}` placeholder (the environment quirk that broke CI), and a real baked hash via `-Dtnt.pack.sha1=<hash>` (the CI/release path).
+- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds. → BUILD SUCCESS, **265 tests**, 0 failures (v0.2.0 combined). Verified green under all three pack-hash conditions: empty (plain local build), the literal `${tnt.pack.sha1}` placeholder (the environment quirk that broke CI), and a real baked hash via `-Dtnt.pack.sha1=<hash>` (the CI/release path).
 - [x] The shaded releasable JAR and embedded `plugin.yml` were inspected; `original-*` JARs are excluded. → `target/tnt-library-0.1.0.jar`; embedded `plugin.yml` `version: '0.1.0'` (substituted), correct main/api-version/commands/permissions/`loadbefore`; **0** `org/bukkit` or `io/papermc` classes bundled (provided scope correct); the Java resource pack (`pack/**`) and Geyser assets (`geyser/**`, unfiltered so PNGs/JSON ship byte-for-byte) are bundled; 33 plugin classes, rig package gone; `original-tnt-library-0.1.0.jar` is the pre-shade intermediate, not a release asset.
 
 ## 7. Matrix
@@ -173,6 +173,17 @@ Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via 
 - **Physics lock** holds (the note-block instrument never re-derives from the block below), the block is **silent**, and **breaking it returns the Water Bomb item**.
 - Edge case: a hand-tuned real note block at `instrument=pling,note=19,powered=false` would be treated as a bomb (documented low-probability limitation) — spot-check acceptability.
 - **Resource-pack delivery (v0.1.1):** a joining **Java** player is offered/receives the CI-published pack over the baked URL+SHA-1 and, on accept, sees the custom block/item textures; a **Bedrock** player is skipped (Geyser serves the Bedrock pack) and is not disconnected; a `resource-pack.required: true` server behaves as configured.
+
+### 7a — v0.2.0 combined re-verification (Twins + Smart Bomb) — DONE
+
+Booted a fresh disposable stack on `target/tnt-library-0.2.0.jar` (built with a real placeholder hash so delivery stays armed). `up` exit 0 — Paper `Done (15.136s)`, Java port served protocol 775, and RCON `plugins` listed **`TNTLibrary` v0.2.0 green** alongside floodgate, Geyser-Spigot, ViaVersion. Verified:
+
+- `/tntlibrary list` → **4 bomb(s) registered [waterbomb, twins_white, twins_black, smartbomb]** — both Twin variants and the Smart Bomb register from `bombs.twins` / `bombs.smartbomb`.
+- **onLoad Geyser installer** wrote **15** custom-block asset files (up from 6); **Geyser parsed the multi-state `custom_mappings` cleanly** — "Registered 8 custom blocks", "Registered 203 custom block overrides", **no error** about the `note_block` donor or the four `state_overrides`. This is the empirical validation that multiple vanilla-state overrides on one `note_block` donor work.
+- `/tntlibrary reload` → 4 bombs re-registered. `/tntlibrary smart get radius` from console → graceful `Only a player can program a Smart Bomb.` (the SMART subcommand is wired and permission/player-gated).
+- Log scan: **no exceptions, no SEVERE, no ClassNotFound/NoClassDefFound** (Floodgate present on the stack; the guarded Cumulus form path did not classload-crash), **no leaked secrets**. Clean teardown, slot released.
+
+**Still gate-12 for v0.2.0 (real client on `play.xpfarm.org`):** the twins_white/twins_black inverse cubes and the smartbomb command-block cube actually render on Java + Bedrock; igniting one Twin carves the trench to its nearest opposite and removes both, a lone Twin fizzles and drops its item, the range cap holds; the Smart Bomb's Bedrock Floodgate form and Java chest GUI open and persist params, arming + each trigger (delay/time/proximity) detonates with the programmed size, and the proximity warning escalates before detonating at ~2 blocks.
 
 ### 7b — full-roster matrix — NOT RUN (out-of-band, not required for this release)
 
