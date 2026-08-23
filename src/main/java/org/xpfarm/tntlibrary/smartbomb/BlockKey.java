@@ -78,4 +78,27 @@ public record BlockKey(String world, int x, int y, int z) {
             return Optional.empty();
         }
     }
+
+    // ---- runtime (server-dependent) ----------------------------------------------------------
+
+    /**
+     * The key identifying a live {@link org.bukkit.block.Block}. Mirrors {@code BombBlocks}'s
+     * pure-vs-runtime split: the {@link #format()}/{@link #parse(String)}/record members above are pure
+     * data and unit-tested directly, while this adapter reaches into a running server (a {@code Block}
+     * only exists with one loaded), so it is verified at the runtime gate rather than in JUnit. Bukkit
+     * types are named fully-qualified so this section adds no imports that would pollute the pure part.
+     */
+    public static BlockKey from(org.bukkit.block.Block block) {
+        return new BlockKey(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
+    }
+
+    /**
+     * The key identifying a {@link org.bukkit.Location}, using its block coordinates. Runtime-only for
+     * the same reason as {@link #from(org.bukkit.block.Block)}. A location detached from its world is a
+     * broken caller, so a null world fails fast rather than fabricating a key.
+     */
+    public static BlockKey from(org.bukkit.Location loc) {
+        java.util.Objects.requireNonNull(loc.getWorld(), "location world");
+        return new BlockKey(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
 }
