@@ -2,7 +2,7 @@
   "format_version": 1,
   "blocks": {
     "minecraft:note_block": {
-      "name": "tnt_library:waterbomb",
+      "name": "tnt_library:bombs",
       "only_override_states": true,
       "state_overrides": {
         "instrument=pling,note=19,powered=false": {
@@ -21,6 +21,69 @@
             },
             "*": {
               "texture": "tnt_library_waterbomb_side",
+              "render_method": "opaque",
+              "face_dimming": true
+            }
+          }
+        },
+        "instrument=pling,note=20,powered=false": {
+          "unit_cube": true,
+          "destructible_by_mining": 1,
+          "material_instances": {
+            "up": {
+              "texture": "tnt_library_twins_white_top",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "down": {
+              "texture": "tnt_library_twins_white_bottom",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "*": {
+              "texture": "tnt_library_twins_white_side",
+              "render_method": "opaque",
+              "face_dimming": true
+            }
+          }
+        },
+        "instrument=pling,note=18,powered=false": {
+          "unit_cube": true,
+          "destructible_by_mining": 1,
+          "material_instances": {
+            "up": {
+              "texture": "tnt_library_twins_black_top",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "down": {
+              "texture": "tnt_library_twins_black_bottom",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "*": {
+              "texture": "tnt_library_twins_black_side",
+              "render_method": "opaque",
+              "face_dimming": true
+            }
+          }
+        },
+        "instrument=pling,note=21,powered=false": {
+          "unit_cube": true,
+          "destructible_by_mining": 1,
+          "material_instances": {
+            "up": {
+              "texture": "tnt_library_smartbomb_top",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "down": {
+              "texture": "tnt_library_smartbomb_bottom",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "*": {
+              "texture": "tnt_library_smartbomb_side",
               "render_method": "opaque",
               "face_dimming": true
             }

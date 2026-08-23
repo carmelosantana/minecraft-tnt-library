@@ -1,7 +1,10 @@
 {
-  "_comment": "TNT Library note_block override. The \"\" variant is the universal fallback: it specifies zero properties, so it matches EVERY note_block state and keeps them all rendering as vanilla minecraft:block/note_block. Each additional key lists specific properties; because a more-specific variant (more properties matched) wins over a less-specific one, only the exact claimed state is re-skinned while all other states stay vanilla. This is the same partial-key + override technique Oraxen/Nexo use to preserve vanilla note blocks. Reserved bombs (twins note=20, smartbomb 21, fbomb 22, gbomb 23, whiteout 24) are left commented for later phases; adding them will not affect vanilla states.",
+  "_comment": "TNT Library note_block override. The \"\" variant is the universal fallback: it specifies zero properties, so it matches EVERY note_block state and keeps them all rendering as vanilla minecraft:block/note_block. Each additional key lists specific properties; because a more-specific variant (more properties matched) wins over a less-specific one, only the exact claimed state is re-skinned while all other states stay vanilla. This is the same partial-key + override technique Oraxen/Nexo use to preserve vanilla note blocks. Active bombs: waterbomb note=19, twins_white note=20, twins_black note=18, smartbomb note=21. Reserved for later phases (fbomb 22, gbomb 23, whiteout 24) are left out until those bombs ship; adding them will not affect vanilla states.",
   "variants": {
     "": { "model": "minecraft:block/note_block" },
-    "instrument=pling,note=19,powered=false": { "model": "tnt_library:block/waterbomb" }
+    "instrument=pling,note=19,powered=false": { "model": "tnt_library:block/waterbomb" },
+    "instrument=pling,note=20,powered=false": { "model": "tnt_library:block/twins_white" },
+    "instrument=pling,note=18,powered=false": { "model": "tnt_library:block/twins_black" },
+    "instrument=pling,note=21,powered=false": { "model": "tnt_library:block/smartbomb" }
   }
 }
