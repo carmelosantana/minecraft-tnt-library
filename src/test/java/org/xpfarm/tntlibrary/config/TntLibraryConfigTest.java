@@ -155,7 +155,7 @@ final class TntLibraryConfigTest {
                   url: 'https://example.com/pack.zip'
                   sha1: 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
                   required: true
-                """), log[0]);
+                """), log[0], PackDefaults.empty());
 
         assertEquals("https://example.com/pack.zip", config.resourcePackUrl());
         assertEquals("da39a3ee5e6b4b0d3255bfef95601890afd80709", config.resourcePackSha1());
@@ -519,7 +519,13 @@ final class TntLibraryConfigTest {
             shippedConfig = YamlConfiguration.loadConfiguration(reader);
         }
 
-        TntLibraryConfig config = TntLibraryConfig.from(shippedConfig, log[0]);
+        // Isolate the shipped config.yml from whatever pack hash this build baked into
+        // PackDefaults: a released build bakes a real URL/SHA-1, which would make the shipped
+        // (empty) resource-pack section resolve to a *configured* pack and, for a config.yml sha1
+        // that differed from the baked one, warn about staleness. This test is about config.yml's
+        // own operator-facing defaults, so it pins an empty built-in fallback; the baked-fallback
+        // resolution has its own coverage in ResourcePackResolutionTest.
+        TntLibraryConfig config = TntLibraryConfig.from(shippedConfig, log[0], PackDefaults.empty());
 
         assertTrue(config.masterEnabled(), "shipped enabled must be true");
         for (BombType type : BombType.values()) {
