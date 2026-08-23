@@ -119,18 +119,18 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ## 2. Repository
 
-- [ ] Repository is `carmelosantana/minecraft-<slug>` with an SSH `origin` and `main` branch.
-- [ ] Existing user-owned worktree changes were identified and preserved.
-- [ ] No `herobrinesystems` references remain in source, metadata, workflows, remotes, or documentation.
+- [x] Repository is `carmelosantana/minecraft-tnt-library` with an SSH `origin` and `main` branch. → created public 2026-08-23 (`git@github.com:carmelosantana/minecraft-tnt-library.git`), `main` tracks `origin/main`, commit `f5bcf09`.
+- [x] Existing user-owned worktree changes were identified and preserved. → none; directory was empty before scaffold.
+- [x] No `herobrinesystems` references remain in source, metadata, workflows, remotes, or documentation. → scan clean across all real surfaces; the only match is this checklist's own rule statement on the line below (template text, not an obsolete-owner reference).
 
 ## 3. Metadata
 
-- [ ] AGPL-3.0-or-later `LICENSE` and Maven license metadata are present and consistent.
-- [ ] `https://xpfarm.org` metadata and Carmelo Santana author metadata are present.
-- [ ] `play.xpfarm.org` is recorded as the public Minecraft server hostname where server identity is documented.
-- [ ] New work uses the `org.xpfarm` Maven group, or an existing-coordinate compatibility decision is documented.
-- [ ] Repository slug, artifact, releasable JAR, updater destination, and `plugin.yml` names are consistent.
-- [ ] No secrets committed in source, defaults, tests, logs, history, or documentation.
+- [x] AGPL-3.0-or-later `LICENSE` and Maven license metadata are present and consistent. → full AGPL `LICENSE`; `pom.xml <licenses>` names "GNU Affero General Public License v3.0 or later".
+- [x] `https://xpfarm.org` metadata and Carmelo Santana author metadata are present. → `pom.xml` `<url>`/`<developers>`, `plugin.yml` `author`/`website`.
+- [x] `play.xpfarm.org` is recorded as the public Minecraft server hostname where server identity is documented. → `README.md` "Playing" section.
+- [x] New work uses the `org.xpfarm` Maven group, or an existing-coordinate compatibility decision is documented. → `org.xpfarm:tnt-library:0.1.0` (new work, no carve-out).
+- [x] Repository slug, artifact, releasable JAR, updater destination, and `plugin.yml` names are consistent. → slug `tnt-library` = `artifactId` = JAR base (`tnt-library-0.1.0.jar`, verified built) = updater dest `tnt-library.jar`; `plugin.yml name: TNTLibrary`.
+- [x] No secrets committed in source, defaults, tests, logs, history, or documentation. → reviewed; config resource-pack url/sha1 empty, no tokens/endpoints.
 
 ## 4. Compatibility
 
@@ -161,9 +161,9 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ## 8. CI/CD
 
-- [ ] Identical standard plugin Actions workflow is installed with the required triggers, Temurin 25 build, artifact, checksum, and release behavior.
-- [ ] Successful main Actions run is recorded before tagging.
-- [ ] Workflow permissions contain no broader access than the documented contract.
+- [x] Identical standard plugin Actions workflow is installed with the required triggers, Temurin 25 build, artifact, checksum, and release behavior. → `.github/workflows/build.yml` (gate 8a); triggers push `main` / tags `v*` / PR→`main` / dispatch; `actions/checkout@v7`, `setup-java@v5` Temurin 25, `mvn clean verify`, bare-filename `SHA256SUMS.txt`, `upload-artifact@v7`, `gh release` on `v*`.
+- [ ] Successful main Actions run is recorded before tagging. → **release gate (8b)**, not scaffold's to tick. Scaffold push triggered run `32647139252` (in progress at hand-off); `minecraft-plugin-release` records the green run before any tag.
+- [x] Workflow permissions contain no broader access than the documented contract. → `permissions: contents: write` only.
 
 ## 9. Release
 
