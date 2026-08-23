@@ -201,6 +201,7 @@ Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via 
 - [x] Fresh install, upgrade, no-op, legacy archival, endpoint failure, and checksum failure behaviors pass. → dry-run: `TNT Library: would install v0.1.0`. Sandbox real run: `installed v0.1.0; archived legacy JARs: tnt-library-0.0.9.jar`, old destination backed up, then `already current (v0.1.0)` on repeat. Endpoint/download/checksum-failure paths covered by the passing unit suite (`test_bad_checksum_preserves_installed_jar` et al.).
 - [x] Updater dry-run uses a disposable directory and never a production plugin directory. → all runs used `/tmp` sandbox dirs (`--plugins-dir`/`--state-file`/`--backup-dir` all inside `/tmp`); production `/minecraft` never touched; sandbox discarded after.
 - [x] Failure retains the installed JAR and default fail-open behavior permits Minecraft startup. → verified by `test_bad_checksum_preserves_installed_jar` (installed JAR preserved on checksum failure) and the updater's fail-open, warn-and-continue default.
+- **v0.1.1 auto-follow confirmed (no manifest change):** the entry has no `pin`, so it tracks the latest non-prerelease release. A disposable dry-run after publishing v0.1.1 printed `TNT Library: would install v0.1.1`, and the anchored `^tnt-library-[0-9].*\.jar$` regex correctly selected `tnt-library-0.1.1.jar` (not the new `tnt-library-pack-0.1.1.zip` sidecars). No `plugins.json` edit was required.
 
 ## 11. Deployment
 
