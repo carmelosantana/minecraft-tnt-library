@@ -182,15 +182,15 @@ Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via 
 ## 8. CI/CD
 
 - [x] Identical standard plugin Actions workflow is installed with the required triggers, Temurin 25 build, artifact, checksum, and release behavior. → `.github/workflows/build.yml` (gate 8a); triggers push `main` / tags `v*` / PR→`main` / dispatch; `actions/checkout@v7`, `setup-java@v5` Temurin 25, `mvn clean verify`, bare-filename `SHA256SUMS.txt`, `upload-artifact@v7`, `gh release` on `v*`.
-- [ ] Successful main Actions run is recorded before tagging. → **release gate (8b)**, not scaffold's to tick. Scaffold push triggered run `32647139252` (in progress at hand-off); `minecraft-plugin-release` records the green run before any tag.
+- [x] Successful main Actions run is recorded before tagging. → main run `32654660644` **completed / success** (32s) on commit `8a9a6ed` (the real-block re-architecture) — the commit that was tagged.
 - [x] Workflow permissions contain no broader access than the documented contract. → `permissions: contents: write` only.
 
 ## 9. Release
 
-- [ ] Semantic version matches the POM, plugin metadata, and `v<version>` tag.
-- [ ] Successful tag Actions run and GitHub release are recorded.
-- [ ] Release contains exactly one updater-matching JAR plus `SHA256SUMS.txt` and no `original-*` JAR.
-- [ ] Downloaded release assets pass `sha256sum --check SHA256SUMS.txt`.
+- [x] Semantic version matches the POM, plugin metadata, and `v<version>` tag. → `0.1.0` in `pom.xml`; `plugin.yml` `version: '${project.version}'` → embedded `0.1.0`; annotated tag `v0.1.0` on commit `8a9a6ed`.
+- [x] Successful tag Actions run and GitHub release are recorded. → tag run `32654753169` **completed / success** (23s); release `v0.1.0` published (not draft/prerelease) by `github-actions[bot]` — https://github.com/carmelosantana/minecraft-tnt-library/releases/tag/v0.1.0
+- [x] Release contains exactly one updater-matching JAR plus `SHA256SUMS.txt` and no `original-*` JAR. → assets: `tnt-library-0.1.0.jar` + `SHA256SUMS.txt` only; `original-*` count 0.
+- [x] Downloaded release assets pass `sha256sum --check SHA256SUMS.txt`. → `tnt-library-0.1.0.jar: OK`.
 
 ## 10. Updater
 
