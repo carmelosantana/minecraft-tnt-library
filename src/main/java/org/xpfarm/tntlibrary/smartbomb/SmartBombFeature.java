@@ -11,8 +11,10 @@ package org.xpfarm.tntlibrary.smartbomb;
 
 import java.io.File;
 import java.util.Objects;
+import org.bukkit.event.HandlerList;
 import org.xpfarm.tntlibrary.TntLibraryPlugin;
 import org.xpfarm.tntlibrary.config.TntLibraryConfig;
+import org.xpfarm.tntlibrary.delivery.BedrockDetector;
 
 /**
  * The Smart Bomb feature module: it owns every Smart Bomb runtime service — the store, the
@@ -31,10 +33,15 @@ import org.xpfarm.tntlibrary.config.TntLibraryConfig;
  */
 public final class SmartBombFeature {
 
+    private final TntLibraryPlugin plugin;
     private final SmartBombStoreService store;
     private final SmartBombWatcher watcher;
     private final SmartBombProgrammer programmer;
     private final SmartBombParams seedParams;
+    private final BedrockDetector detector;
+
+    /** The registered interaction listener; null until {@link #enable()}, cleared on {@link #disable()}. */
+    private SmartBombListener listener;
 
     /**
      * Builds the Smart Bomb service graph. {@code radius}/{@code delay} for the placement seed come
@@ -47,24 +54,30 @@ public final class SmartBombFeature {
     public SmartBombFeature(TntLibraryPlugin plugin, TntLibraryConfig config) {
         Objects.requireNonNull(plugin, "plugin");
         Objects.requireNonNull(config, "config");
+        this.plugin = plugin;
         this.store = new SmartBombStoreService(plugin, new File(plugin.getDataFolder(), "smartbombs.yml"));
         this.watcher = new SmartBombWatcher(plugin, store);
         this.programmer = new SmartBombProgrammer(store);
         SmartBombDefaults defaults = SmartBombDefaults.from(plugin.getConfig(), plugin.getLogger());
         this.seedParams = defaults.seed(
                 config.bomb(SmartBomb.ID).radius(), config.bomb(SmartBomb.ID).fuseTicks());
+        this.detector = BedrockDetector.create(plugin.getLogger());
     }
 
-    /** Loads the store from disk. Call once on enable. */
+    /** Loads the store from disk and registers the interaction listener. Call once on enable. */
     public void enable() {
         store.load();
-        // Task 7: register SmartBombListener here
+        this.listener = new SmartBombListener(plugin, this, detector);
+        plugin.getServer().getPluginManager().registerEvents(listener, plugin);
     }
 
-    /** Cancels every armed watcher and flushes the store to disk. Call on disable. */
+    /** Unregisters the listener, cancels every armed watcher, and flushes the store. Call on disable. */
     public void disable() {
         watcher.cancelAll();
         store.flush();
+        if (listener != null) {
+            HandlerList.unregisterAll(listener); // so a reload's rebuild doesn't double-register
+        }
     }
 
     /** The single DRY write/read path for a placed Smart Bomb's programming. */
