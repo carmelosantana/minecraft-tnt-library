@@ -32,6 +32,8 @@ import org.xpfarm.tntlibrary.listener.IgnitionListener;
 import org.xpfarm.tntlibrary.listener.PlacementListener;
 import org.xpfarm.tntlibrary.protect.AllowAllProtection;
 import org.xpfarm.tntlibrary.protect.ProtectionService;
+import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
+import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
 
 /**
  * Plugin bootstrap for TNT Library: the Phase-1 wiring that connects the already-built layers so a
@@ -65,6 +67,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private BombFuse bombFuse;
     private Detonator detonator;
     private ResourcePackDeliveryListener packDeliveryListener;
+    private SmartBombFeature smartBomb;
 
     @Override
     public void onLoad() {
@@ -83,6 +86,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
 
         this.bombFuse = new BombFuse(this);
         this.detonator = new Detonator(this, config, protection);
+
+        this.smartBomb = new SmartBombFeature(this, config);
+        smartBomb.enable();
 
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
@@ -119,6 +125,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
                 BombRecipes.unregister(this, bomb);
             }
         }
+        if (smartBomb != null) {
+            smartBomb.disable();
+        }
         getLogger().info("TNTLibrary disabled.");
     }
 
@@ -141,6 +150,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
         registerEnabledBombs(config);
         this.detonator = new Detonator(this, config, protection);
         registerDeliveryListener();
+        if (smartBomb != null) {
+            smartBomb.disable();
+        }
+        this.smartBomb = new SmartBombFeature(this, config);
+        smartBomb.enable();
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
         }
@@ -166,6 +180,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private void registerEnabledBombs(TntLibraryConfig cfg) {
         if (cfg.bomb(WaterBomb.ID).enabled()) {
             registry.register(new WaterBomb(cfg.bomb(WaterBomb.ID).fuseTicks()));
+        }
+        if (cfg.bomb(SmartBomb.ID).enabled()) {
+            registry.register(new SmartBomb(cfg.bomb(SmartBomb.ID).fuseTicks()));
         }
     }
 
@@ -206,5 +223,10 @@ public final class TntLibraryPlugin extends JavaPlugin {
     /** The current validated configuration snapshot. */
     public TntLibraryConfig config() {
         return config;
+    }
+
+    /** The Smart Bomb feature module; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */
+    public SmartBombFeature smartBomb() {
+        return smartBomb;
     }
 }
