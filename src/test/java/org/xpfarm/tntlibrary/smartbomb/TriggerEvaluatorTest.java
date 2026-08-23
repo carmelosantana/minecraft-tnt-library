@@ -26,8 +26,8 @@ final class TriggerEvaluatorTest {
     @Test
     void delayFiresAtCapNotBefore() {
         SmartBombParams p = delayOnly();
-        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(49, 0, null)).detonate());
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(50, 0, null));
+        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(49, 0, 0, null)).detonate());
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(50, 0, 0, null));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.DELAY, d.firedBy());
     }
@@ -35,9 +35,10 @@ final class TriggerEvaluatorTest {
     @Test
     void timeFiresExactlyAtMatchNotOffByOne() {
         SmartBombParams p = new SmartBombParams(4, 72000, 6000L, false, 6);
-        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 5999, null)).detonate());
-        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 6001, null)).detonate());
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 6000, null));
+        // No clock movement (previous == current): only an exact hit fires.
+        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 5999, 5999, null)).detonate());
+        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 6001, 6001, null)).detonate());
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 6000, 6000, null));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.TIME, d.firedBy());
     }
@@ -46,11 +47,11 @@ final class TriggerEvaluatorTest {
     void proximityFiresWithinRadiusOnly() {
         SmartBombParams p = new SmartBombParams(4, 72000, null, true, 6);
         // farther than radius: no fire
-        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 6.5)).detonate());
+        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, 6.5)).detonate());
         // null distance (nothing in range): no fire
-        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, null)).detonate());
+        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, null)).detonate());
         // within radius: fire
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 6.0));
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, 6.0));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
     }
@@ -58,7 +59,7 @@ final class TriggerEvaluatorTest {
     @Test
     void proximityPreemptsBeforeDelayElapses() {
         SmartBombParams p = new SmartBombParams(4, 50, null, true, 6);
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(1, 0, 3.0));
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(1, 0, 0, 3.0));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
     }
@@ -66,7 +67,7 @@ final class TriggerEvaluatorTest {
     @Test
     void proximityWinsLabelWhenProximityAndTimeCoincide() {
         SmartBombParams p = new SmartBombParams(4, 72000, 6000L, true, 6);
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 6000, 2.0));
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 6000, 6000, 2.0));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
     }
@@ -74,7 +75,7 @@ final class TriggerEvaluatorTest {
     @Test
     void timeWinsLabelWhenTimeAndDelayCoincide() {
         SmartBombParams p = new SmartBombParams(4, 50, 6000L, false, 6);
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(50, 6000, null));
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(50, 6000, 6000, null));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.TIME, d.firedBy());
     }
@@ -82,8 +83,54 @@ final class TriggerEvaluatorTest {
     @Test
     void nothingMatchedYieldsNoDetonateAndNone() {
         SmartBombParams p = new SmartBombParams(4, 72000, 6000L, true, 6);
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 5000, 10.0));
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 5000, 5000, 10.0));
         assertFalse(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.NONE, d.firedBy());
+    }
+
+    // --- I1 fix: the time trigger uses reach/cross semantics, robust to multi-tick sampling. ---
+
+    /**
+     * The exact ~25% bug: the watcher samples world time in 4-tick steps, so a step can jump OVER the
+     * target (5998 -> 6002 skips 6000). Reach/cross semantics MUST still fire; the old exact-equality
+     * check would not.
+     */
+    @Test
+    void timeFiresWhenSamplingStepJumpsOverTarget() {
+        SmartBombParams p = new SmartBombParams(4, 72000, 6000L, false, 6);
+        TriggerEvaluator.Decision d =
+                TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(4, 6002, 5998, null));
+        assertTrue(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.TIME, d.firedBy());
+    }
+
+    /** Target already behind the window (prev=6002, cur=6006) must NOT re-fire on time. */
+    @Test
+    void timeDoesNotFireWhenTargetBehindWindow() {
+        SmartBombParams p = new SmartBombParams(4, 72000, 6000L, false, 6);
+        TriggerEvaluator.Decision d =
+                TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(4, 6006, 6002, null));
+        assertFalse(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.NONE, d.firedBy());
+    }
+
+    /** Day-wrap: a window that crosses midnight (prev=23998 -> cur=2) crosses target 0 and fires. */
+    @Test
+    void timeFiresWhenWindowWrapsMidnight() {
+        SmartBombParams p = new SmartBombParams(4, 72000, 0L, false, 6);
+        TriggerEvaluator.Decision d =
+                TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(4, 2, 23998, null));
+        assertTrue(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.TIME, d.firedBy());
+    }
+
+    /** A stationary clock exactly on the target (prev==cur==target) still fires. */
+    @Test
+    void timeFiresWhenClockStationaryOnTarget() {
+        SmartBombParams p = new SmartBombParams(4, 72000, 6000L, false, 6);
+        TriggerEvaluator.Decision d =
+                TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(4, 6000, 6000, null));
+        assertTrue(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.TIME, d.firedBy());
     }
 }

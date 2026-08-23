@@ -32,7 +32,10 @@ public final class TriggerEvaluator {
     public enum Trigger {
         /** A living entity was within the proximity radius. */
         PROXIMITY,
-        /** The world time-of-day matched the configured trigger time. */
+        /**
+         * The time trigger fires when the world clock reaches or crosses the set time (robust to the
+         * watcher's multi-tick sampling cadence and to {@code /time set} jumps).
+         */
         TIME,
         /** The elapsed fuse reached the delay cap. */
         DELAY,
@@ -48,10 +51,13 @@ public final class TriggerEvaluator {
      *
      * @param elapsedTicks ticks since the bomb was armed
      * @param worldTime world time-of-day, already normalized to {@code 0..23999} by the caller
+     * @param previousWorldTime the world time sampled on the PRIOR watcher tick, already normalized to
+     *     {@code 0..23999}; equal to {@code worldTime} on the first tick. Lets the evaluator detect the
+     *     world clock reaching or crossing the time trigger between two multi-tick samples.
      * @param nearestDistance distance to the nearest living entity in scan range, or {@code null} when
      *     none is in range
      */
-    public record State(long elapsedTicks, long worldTime, Double nearestDistance) {}
+    public record State(long elapsedTicks, long worldTime, long previousWorldTime, Double nearestDistance) {}
 
     /**
      * Decides whether the bomb detonates this tick. See the class Javadoc for the rule.
@@ -63,7 +69,13 @@ public final class TriggerEvaluator {
     public static Decision evaluate(SmartBombParams p, State s) {
         boolean proxFires =
                 p.proximity() && s.nearestDistance() != null && s.nearestDistance() <= p.proximityRadius();
-        boolean timeFires = p.timeTrigger() != null && s.worldTime() == p.timeTrigger().longValue();
+        boolean timeFires = false;
+        if (p.timeTrigger() != null) {
+            long target = p.timeTrigger();               // already normalized 0..23999 by the record
+            long advanced = Math.floorMod(s.worldTime() - s.previousWorldTime(), 24000L);
+            long toTarget = Math.floorMod(target - s.previousWorldTime(), 24000L);
+            timeFires = s.worldTime() == target || (toTarget > 0 && toTarget <= advanced);
+        }
         boolean delayFires = s.elapsedTicks() >= p.delayTicks();
 
         boolean detonate = proxFires || timeFires || delayFires;

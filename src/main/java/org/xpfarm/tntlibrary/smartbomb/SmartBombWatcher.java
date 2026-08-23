@@ -113,6 +113,7 @@ public final class SmartBombWatcher {
         world.playSound(center, WARNING_SOUND, WARNING_VOLUME, 0.6f);
 
         Armed holder = new Armed(params);
+        holder.lastWorldTime = Math.floorMod(world.getTime(), 24000);
         BukkitTask task = new BukkitRunnable() {
             @Override
             public void run() {
@@ -169,10 +170,14 @@ public final class SmartBombWatcher {
             }
         }
 
-        // 5. Decide, with the world time normalized to 0..23999 for the pure evaluator.
+        // 5. Decide, with the world time normalized to 0..23999 for the pure evaluator. The previous
+        //    sample lets the evaluator detect the clock reaching/crossing the target between two
+        //    multi-tick samples; update it only after evaluating.
         long worldTime = Math.floorMod(world.getTime(), 24000);
         TriggerEvaluator.Decision decision = TriggerEvaluator.evaluate(
-                params, new TriggerEvaluator.State(holder.elapsed, worldTime, nearestDistance));
+                params, new TriggerEvaluator.State(
+                        holder.elapsed, worldTime, holder.lastWorldTime, nearestDistance));
+        holder.lastWorldTime = worldTime;
 
         // 6. Detonate: disarm, drop the store entry (detonate removes it), clear the cube, then blast
         //    with the PROGRAMMED radius.
@@ -237,6 +242,13 @@ public final class SmartBombWatcher {
 
         /** Ticks since arming, advanced by {@link #WATCHER_PERIOD_TICKS} each run. */
         private long elapsed;
+
+        /**
+         * World time-of-day sampled on the previous watcher tick, normalized to {@code 0..23999};
+         * seeded at {@link #arm} and updated each run after evaluating. Lets the evaluator detect the
+         * world clock reaching or crossing the time trigger between two multi-tick samples.
+         */
+        private long lastWorldTime;
 
         /** Countdown to the next warning beep, in ticks; reset to the warning's period after a beep. */
         private long beepCounter;
