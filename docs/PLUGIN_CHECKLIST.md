@@ -185,15 +185,15 @@ Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via 
 ## 8. CI/CD
 
 - [x] Identical standard plugin Actions workflow is installed with the required triggers, Temurin 25 build, artifact, checksum, and release behavior. → `.github/workflows/build.yml` (gate 8a); triggers push `main` / tags `v*` / PR→`main` / dispatch; `actions/checkout@v7`, `setup-java@v5` Temurin 25, `mvn clean verify`, bare-filename `SHA256SUMS.txt`, `upload-artifact@v7`, `gh release` on `v*`.
-- [x] Successful main Actions run is recorded before tagging. → main run `32654660644` **completed / success** (32s) on commit `8a9a6ed` (the real-block re-architecture) — the commit that was tagged.
+- [x] Successful main Actions run is recorded before tagging. → **v0.1.1:** main run `32657520501` **completed / success** on commit `f1d7f5f` (the tagged commit) — the first main run of the new PackSquash pack pipeline, which bakes the real pack SHA-1 into the JAR. (v0.1.0 was main run `32654660644` on `8a9a6ed`.)
 - [x] Workflow permissions contain no broader access than the documented contract. → `permissions: contents: write` only.
 
 ## 9. Release
 
-- [x] Semantic version matches the POM, plugin metadata, and `v<version>` tag. → `0.1.0` in `pom.xml`; `plugin.yml` `version: '${project.version}'` → embedded `0.1.0`; annotated tag `v0.1.0` on commit `8a9a6ed`.
-- [x] Successful tag Actions run and GitHub release are recorded. → tag run `32654753169` **completed / success** (23s); release `v0.1.0` published (not draft/prerelease) by `github-actions[bot]` — https://github.com/carmelosantana/minecraft-tnt-library/releases/tag/v0.1.0
-- [x] Release contains exactly one updater-matching JAR plus `SHA256SUMS.txt` and no `original-*` JAR. → assets: `tnt-library-0.1.0.jar` + `SHA256SUMS.txt` only; `original-*` count 0.
-- [x] Downloaded release assets pass `sha256sum --check SHA256SUMS.txt`. → `tnt-library-0.1.0.jar: OK`.
+- [x] Semantic version matches the POM, plugin metadata, and `v<version>` tag. → **v0.1.1** in `pom.xml`; `plugin.yml` `version: '${project.version}'` → embedded `0.1.1` (verified in the running stack: "Loading server plugin TNTLibrary v0.1.1"); annotated tag `v0.1.1` on commit `f1d7f5f`. (Prior release: `v0.1.0` on `8a9a6ed`.)
+- [x] Successful tag Actions run and GitHub release are recorded. → tag run `32657585113` **completed / success** (incl. the PackSquash pack + tagged-asset upload steps); release `v0.1.1` published (not draft/prerelease) — https://github.com/carmelosantana/minecraft-tnt-library/releases/tag/v0.1.1
+- [x] Release contains exactly one updater-matching JAR plus `SHA256SUMS.txt` and no `original-*` JAR. → assets: `tnt-library-0.1.1.jar` + `SHA256SUMS.txt` (plus the resource-pack sidecars `tnt-library-pack-0.1.1.zip` + `.zip.sha1`, which are not JARs and do not match the updater regex); `original-*` count 0.
+- [x] Downloaded release assets pass `sha256sum --check SHA256SUMS.txt`. → `tnt-library-0.1.1.jar: OK`. **Delivery integrity also verified:** the JAR's baked `pack-defaults.properties` `pack.sha1` (`afe34464583084f4414a5a0f2e134bb7645adbca`) exactly equals the published `tnt-library-pack-0.1.1.zip` SHA-1, and `pack.url` points to the v0.1.1 asset — so a Java client fetches the exact published pack and its hash check passes.
 
 ## 10. Updater
 
