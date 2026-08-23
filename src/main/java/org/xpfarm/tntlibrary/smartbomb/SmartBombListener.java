@@ -10,8 +10,10 @@
 package org.xpfarm.tntlibrary.smartbomb;
 
 import java.util.Objects;
+import java.util.logging.Level;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -45,9 +47,10 @@ import org.xpfarm.tntlibrary.delivery.BedrockDetector;
  *
  * <h2>Bedrock seam</h2>
  *
- * <p>{@link #openBedrockProgrammer} is a private seam: for now it falls back to the Java chest, which
- * already works for Bedrock players through Geyser (the universal fallback). Task 8 will replace its
- * body with a guarded native form. This class references no Floodgate/Cumulus type.
+ * <p>{@link #openBedrockProgrammer} is a private seam: it opens the guarded native Floodgate form via
+ * {@link SmartBombBedrockForm}, falling back to the Java chest (which already works for Bedrock players
+ * through Geyser) whenever Floodgate is absent or a Cumulus class fails to link. This class references
+ * no Floodgate/Cumulus type — it only names the plugin's own {@code SmartBombBedrockForm}.
  *
  * <h2>Place/break at MONITOR, ignoreCancelled</h2>
  *
@@ -117,13 +120,30 @@ public final class SmartBombListener implements Listener {
     }
 
     /**
-     * The Bedrock programming seam. Task-7 placeholder: for now it just opens the chest GUI.
+     * The Bedrock programming seam: open the native Floodgate CustomForm, guarded so a pure-Java server
+     * never links a Cumulus type.
      *
-     * <p>Task 8: open the native Floodgate CustomForm here (guarded); the chest GUI is the universal
-     * fallback and works for Bedrock via Geyser.
+     * <p>If Floodgate is absent the chest GUI (which serves Bedrock via Geyser) is the universal
+     * fallback. Otherwise the form is opened one tick later — dodging Geyser #5850's post-close
+     * inventory lock — and any Cumulus hiccup ({@link NoClassDefFoundError} included) falls back to the
+     * chest so a player is never stranded without a UI. The {@link SmartBombBedrockForm} reference below
+     * is the only one in this class; on a Java-only server this branch is never reached (the interact
+     * handler only calls this for a detected Bedrock player), so Cumulus is never classloaded.
      */
     private void openBedrockProgrammer(Player player, Block block, SmartBombParams current) {
-        openChest(player, block, current);
+        if (!Bukkit.getPluginManager().isPluginEnabled("floodgate")) {
+            openChest(player, block, current); // Floodgate absent — universal fallback
+            return;
+        }
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            try {
+                SmartBombBedrockForm.open(plugin, player, block, current, feature.programmer());
+            } catch (Throwable t) { // NoClassDefFoundError / any Cumulus hiccup — never strand the player
+                plugin.getLogger().log(Level.WARNING,
+                        "Bedrock Smart Bomb form failed; falling back to the chest GUI", t);
+                openChest(player, block, current);
+            }
+        });
     }
 
     // ---- (b) chest click / drag handling -----------------------------------------------------
