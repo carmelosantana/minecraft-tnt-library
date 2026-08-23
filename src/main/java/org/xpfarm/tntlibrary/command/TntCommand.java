@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -26,8 +27,13 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.xpfarm.tntlibrary.TntLibraryPlugin;
+import org.xpfarm.tntlibrary.block.BombBlocks;
 import org.xpfarm.tntlibrary.core.CustomTnt;
 import org.xpfarm.tntlibrary.core.TntRegistry;
+import org.xpfarm.tntlibrary.smartbomb.ParamCodec;
+import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
+import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
+import org.xpfarm.tntlibrary.smartbomb.SmartBombParams;
 
 /**
  * The {@code /tntlibrary} (alias {@code /tntlib}) command: {@code give}, {@code list}, {@code
@@ -60,6 +66,7 @@ public final class TntCommand implements CommandExecutor, TabCompleter {
         return switch (sub.get()) {
             case GIVE -> give(sender, args);
             case LIST -> list(sender);
+            case SMART -> smart(sender, args);
             case RELOAD -> reload(sender);
         };
     }
@@ -182,6 +189,64 @@ public final class TntCommand implements CommandExecutor, TabCompleter {
     }
 
     // ---------------------------------------------------------------------------------------------
+    // smart
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Programs the placed Smart Bomb the player is looking at: {@code get} prints its current params,
+     * {@code set <key> <value>} edits one field. Reuses the unit-tested {@link ParamCodec} for parsing
+     * and rendering, so this method only does the server-touching work (target resolution, replies).
+     */
+    private boolean smart(CommandSender sender, String[] args) {
+        if (!sender.hasPermission(Permissions.SMART)) {
+            denied(sender);
+            return true;
+        }
+        if (!(sender instanceof Player player)) {
+            reply(sender, red("Only a player can program a Smart Bomb."));
+            return true;
+        }
+        SmartBombFeature feature = plugin.smartBomb();
+        if (feature == null || plugin.registry().get(SmartBomb.ID).isEmpty()) {
+            reply(sender, red("The Smart Bomb is disabled on this server."));
+            return true;
+        }
+        Block target = player.getTargetBlockExact(6);
+        if (target == null || !BombBlocks.bombIdOf(target).map(SmartBomb.ID::equals).orElse(false)) {
+            reply(sender, red("Look at a placed Smart Bomb within 6 blocks."));
+            return true;
+        }
+        if (args.length < 2) {
+            reply(sender, yellow("Usage: /tntlibrary smart <get | set <key> <value>>"));
+            return true;
+        }
+        SmartBombParams current = feature.programmer().current(target, feature.seedParams());
+        String action = args[1].toLowerCase(Locale.ROOT);
+        if (action.equals("get")) {
+            reply(sender, aqua("Smart Bomb: " + ParamCodec.describe(current)));
+            return true;
+        }
+        if (action.equals("set")) {
+            if (args.length < 4) {
+                reply(sender, red("Usage: /tntlibrary smart set <key> <value>"));
+                return true;
+            }
+            ParamCodec.Edit edit = ParamCodec.applyKeyValue(current, args[2], args[3]);
+            if (edit.error() != null) {
+                reply(sender, red(edit.error()));
+                return true;
+            }
+            feature.programmer().apply(target, edit.params());
+            String note = feature.watcher().isArmed(target) ? " (re-arm to apply while armed)" : "";
+            reply(sender, green("Set " + args[2].toLowerCase(Locale.ROOT) + ". Now: "
+                    + ParamCodec.describe(edit.params()) + note));
+            return true;
+        }
+        reply(sender, yellow("Usage: /tntlibrary smart <get | set <key> <value>>"));
+        return true;
+    }
+
+    // ---------------------------------------------------------------------------------------------
     // Tab completion
     // ---------------------------------------------------------------------------------------------
 
@@ -194,6 +259,9 @@ public final class TntCommand implements CommandExecutor, TabCompleter {
                 subs.add(Subcommand.GIVE.label());
                 subs.add(Subcommand.LIST.label());
             }
+            if (sender.hasPermission(Permissions.SMART)) {
+                subs.add(Subcommand.SMART.label());
+            }
             if (sender.hasPermission(Permissions.RELOAD)) {
                 subs.add(Subcommand.RELOAD.label());
             }
@@ -201,6 +269,17 @@ public final class TntCommand implements CommandExecutor, TabCompleter {
         }
 
         Optional<Subcommand> sub = Subcommand.fromArg(args[0]);
+        if (sub.isPresent() && sub.get() == Subcommand.SMART && sender.hasPermission(Permissions.SMART)) {
+            return switch (args.length) {
+                case 2 -> prefixed(List.of("get", "set"), args[1]);
+                case 3 -> args[1].equalsIgnoreCase("set")
+                        ? prefixed(List.of(ParamCodec.KEY_RADIUS, ParamCodec.KEY_DELAY,
+                                ParamCodec.KEY_TIME, ParamCodec.KEY_PROXIMITY,
+                                ParamCodec.KEY_PROXIMITY_RADIUS), args[2])
+                        : List.of();
+                default -> List.of();
+            };
+        }
         if (sub.isEmpty() || sub.get() != Subcommand.GIVE || !sender.hasPermission(Permissions.GIVE)) {
             return List.of();
         }
@@ -246,5 +325,21 @@ public final class TntCommand implements CommandExecutor, TabCompleter {
 
     private static void reply(CommandSender sender, Component message) {
         sender.sendMessage(message);
+    }
+
+    private static Component red(String message) {
+        return Component.text(message, NamedTextColor.RED);
+    }
+
+    private static Component yellow(String message) {
+        return Component.text(message, NamedTextColor.YELLOW);
+    }
+
+    private static Component aqua(String message) {
+        return Component.text(message, NamedTextColor.AQUA);
+    }
+
+    private static Component green(String message) {
+        return Component.text(message, NamedTextColor.GREEN);
     }
 }

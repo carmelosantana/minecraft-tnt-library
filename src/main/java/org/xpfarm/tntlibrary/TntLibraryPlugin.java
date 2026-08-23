@@ -33,6 +33,8 @@ import org.xpfarm.tntlibrary.listener.IgnitionListener;
 import org.xpfarm.tntlibrary.listener.PlacementListener;
 import org.xpfarm.tntlibrary.protect.AllowAllProtection;
 import org.xpfarm.tntlibrary.protect.ProtectionService;
+import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
+import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
 import org.xpfarm.tntlibrary.twins.PlacedTwinIndex;
 import org.xpfarm.tntlibrary.twins.TheTwins;
 import org.xpfarm.tntlibrary.twins.TwinColor;
@@ -69,6 +71,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private BombFuse bombFuse;
     private Detonator detonator;
     private ResourcePackDeliveryListener packDeliveryListener;
+    private SmartBombFeature smartBomb;
 
     /**
      * The shared, per-world register of placed Twins. Built once at construction and never rebuilt —
@@ -97,6 +100,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
 
         this.bombFuse = new BombFuse(this);
         this.detonator = new Detonator(this, config, protection);
+
+        this.smartBomb = new SmartBombFeature(this, config);
+        smartBomb.enable();
 
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
@@ -133,6 +139,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
                 BombRecipes.unregister(this, bomb);
             }
         }
+        if (smartBomb != null) {
+            smartBomb.disable();
+        }
         getLogger().info("TNTLibrary disabled.");
     }
 
@@ -155,6 +164,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
         registerEnabledBombs(config);
         this.detonator = new Detonator(this, config, protection);
         registerDeliveryListener();
+        if (smartBomb != null) {
+            smartBomb.disable();
+        }
+        this.smartBomb = new SmartBombFeature(this, config);
+        smartBomb.enable();
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
         }
@@ -189,6 +203,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
                     TwinColor.WHITE, twins.fuseTicks(), twins.radius(), twins.hangTicks(), placedTwinIndex));
             registry.register(new TheTwins(
                     TwinColor.BLACK, twins.fuseTicks(), twins.radius(), twins.hangTicks(), placedTwinIndex));
+        }
+        if (cfg.bomb(SmartBomb.ID).enabled()) {
+            registry.register(new SmartBomb(cfg.bomb(SmartBomb.ID).fuseTicks()));
         }
     }
 
@@ -234,5 +251,10 @@ public final class TntLibraryPlugin extends JavaPlugin {
     /** The current validated configuration snapshot. */
     public TntLibraryConfig config() {
         return config;
+    }
+
+    /** The Smart Bomb feature module; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */
+    public SmartBombFeature smartBomb() {
+        return smartBomb;
     }
 }

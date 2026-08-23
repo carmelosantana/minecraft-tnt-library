@@ -22,6 +22,7 @@ import java.util.Optional;
 public enum Subcommand {
     GIVE,
     LIST,
+    SMART,
     RELOAD;
 
     /** The lowercase word a player types for this subcommand. */

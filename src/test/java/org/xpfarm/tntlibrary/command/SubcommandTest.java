@@ -22,6 +22,8 @@ final class SubcommandTest {
     void resolvesKnownWordsCaseInsensitively() {
         assertEquals(Optional.of(Subcommand.GIVE), Subcommand.fromArg("give"));
         assertEquals(Optional.of(Subcommand.LIST), Subcommand.fromArg("LIST"));
+        assertEquals(Optional.of(Subcommand.SMART), Subcommand.fromArg("smart"));
+        assertEquals(Optional.of(Subcommand.SMART), Subcommand.fromArg("SMART"));
         assertEquals(Optional.of(Subcommand.RELOAD), Subcommand.fromArg("Reload"));
     }
 
@@ -36,6 +38,7 @@ final class SubcommandTest {
     void labelIsTheLowercaseTypedWord() {
         assertEquals("give", Subcommand.GIVE.label());
         assertEquals("list", Subcommand.LIST.label());
+        assertEquals("smart", Subcommand.SMART.label());
         assertEquals("reload", Subcommand.RELOAD.label());
     }
 }

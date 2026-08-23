@@ -33,6 +33,9 @@ public final class Permissions {
     /** Gate for {@code /tntlibrary give} (and {@code list}). */
     public static final String GIVE = "tntlibrary.command.give";
 
+    /** Gate for {@code /tntlibrary smart <get|set>} — programming a placed Smart Bomb by command. */
+    public static final String SMART = "tntlibrary.command.smart";
+
     /** Gate for {@code /tntlibrary reload}. */
     public static final String RELOAD = "tntlibrary.command.reload";
 

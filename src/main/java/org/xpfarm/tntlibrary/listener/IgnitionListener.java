@@ -34,6 +34,8 @@ import org.xpfarm.tntlibrary.TntLibraryPlugin;
 import org.xpfarm.tntlibrary.block.BombBlocks;
 import org.xpfarm.tntlibrary.command.Permissions;
 import org.xpfarm.tntlibrary.core.CustomTnt;
+import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
+import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
 
 /**
  * Ignites a placed bomb block with real-TNT parity: flint &amp; steel (right-click or dispenser),
@@ -156,8 +158,18 @@ public final class IgnitionListener implements Listener {
      * {@link org.xpfarm.tntlibrary.detonation.Detonator}. {@code igniter} may be {@code null} for an
      * environmental trigger. Returns whether a new fuse actually started (a block already burning is
      * left alone).
+     *
+     * <p>The Smart Bomb diverts to its watcher (which owns the delay/time/proximity triggers) instead
+     * of the plain instant fuse; every other bomb id, including the Twins variants, falls through to
+     * the shared {@link org.xpfarm.tntlibrary.block.BombFuse} path unchanged.
      */
     private boolean ignite(Block block, CustomTnt bomb, Player igniter) {
+        if (SmartBomb.ID.equals(bomb.id())) {
+            SmartBombFeature feature = plugin.smartBomb();
+            if (feature != null) {
+                return feature.watcher().arm(block, igniter);   // arm instead of the plain instant fuse
+            }
+        }
         if (plugin.bombFuse().isBurning(block)) {
             return false;
         }

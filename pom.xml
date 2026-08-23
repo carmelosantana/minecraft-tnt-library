@@ -53,6 +53,12 @@
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
+        <repository>
+            <!-- OpenCollab: hosts the Floodgate/Cumulus API used (provided-scope) to build the
+                 Smart Bomb's Bedrock CustomForm. -->
+            <id>opencollab-repo</id>
+            <url>https://repo.opencollab.dev/main/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -67,6 +73,21 @@
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>26.1.2.build.74-stable</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!--
+            Floodgate API (pulls in Cumulus), provided-scope, for the Smart Bomb's Bedrock
+            CustomForm. NEVER shaded: provided scope is excluded from the shade plugin's uber-jar,
+            so the API is compile-only. Every call site is guarded by a floodgate-present /
+            ClassNotFoundException check (see BedrockDetector for the ecosystem pattern), so the
+            form path is inert on a pure-Java server that never ships this jar. Floodgate only
+            publishes SNAPSHOTs; 2.2.5-SNAPSHOT is the current release line on repo.opencollab.dev.
+        -->
+        <dependency>
+            <groupId>org.geysermc.floodgate</groupId>
+            <artifactId>api</artifactId>
+            <version>2.2.5-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
