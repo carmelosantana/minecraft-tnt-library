@@ -19,6 +19,12 @@ bombs:
     enabled: true
     default-radius: 4
     default-delay-ticks: 100
+    # Trigger defaults a freshly placed Smart Bomb is seeded with; a player's programming overrides
+    # them. proximity/time triggers default off, so an unprogrammed Smart Bomb behaves like a plain
+    # timed fuse (default-delay-ticks).
+    default-proximity-radius: 6
+    proximity-default: false
+    time-trigger-default: false
   fbomb:
     enabled: false
     fuse-ticks: 60
