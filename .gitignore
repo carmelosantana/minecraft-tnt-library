@@ -45,3 +45,8 @@ hs_err_pid*
 
 # Local Claude Code tooling config (not plugin code)
 .claude/
+
+# Generated design-canvas output (regenerate from docs/art/canvas/*.dc.html via the design skill)
+docs/art/canvas/tnt-library-art-direction.html
+# Large raw ComfyUI concept renders (WIP, not shipped; keep only the small 16x mocks + previews)
+docs/art/mocks/ComfyUI_*.png

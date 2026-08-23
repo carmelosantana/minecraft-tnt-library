@@ -1,0 +1,251 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .pixel { font-family: 'Silkscreen', ui-monospace, monospace; }
+    .sans { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    svg.tile { image-rendering: pixelated; shape-rendering: crispEdges; border-radius: 3px; border: 1px solid #2b313b; }
+    a { color: #4FC3E8; } a:hover { color: #BFEFFF; }
+    .facelabel { font-family: 'Silkscreen', monospace; font-size: 9px; color: #6b7565; letter-spacing: 1px; margin-top: 6px; text-align: center; }
+    .row { display: grid; grid-template-columns: 210px repeat(3, 96px); gap: 22px; align-items: center; padding: 16px 0; border-top: 1px solid #21262e; }
+    .name { font-family: 'Silkscreen', monospace; font-size: 13px; }
+    .desc { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 12px; color: #99a3b1; margin-top: 8px; line-height: 1.45; }
+  </style>
+</helmet>
+
+<div class="sans" style="width: 760px; background: #0e1013; color: #e9edf2; padding: 40px 40px 44px;">
+
+  <div class="pixel" style="font-size: 20px; color: #ffffff;">FACE TREATMENT SHEET</div>
+  <div style="font-size: 13px; color: #9aa4b2; margin-top: 8px; line-height: 1.5;">
+    The three cube faces per bomb. Every face keeps a 1-px dark outline; tops &amp; bottoms carry banded caps; the side carries the center label band. Motif and color are the signature.
+  </div>
+
+  <!-- WATER BOMB -->
+  <div class="row">
+    <div>
+      <div class="name" style="color:#4FC3E8;">WATER BOMB</div>
+      <div class="desc">Rippling caps, a bubble where the label sits.</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#1E7FC8"/>
+        <rect x="6" y="6" width="4" height="4" fill="#4FC3E8"/><rect x="7" y="7" width="2" height="2" fill="#BFEFFF"/>
+        <rect x="3" y="3" width="2" height="1" fill="#4FC3E8"/><rect x="11" y="11" width="2" height="1" fill="#4FC3E8"/>
+        <rect width="16" height="16" fill="none" stroke="#0A2A4A" stroke-width="1"/>
+      </svg>
+      <div class="facelabel">TOP</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#1E7FC8"/>
+        <rect y="0" width="16" height="2" fill="#14568C"/><rect y="14" width="16" height="2" fill="#14568C"/>
+        <rect x="6" y="7" width="4" height="3" fill="#4FC3E8"/><rect x="7" y="8" width="2" height="1" fill="#BFEFFF"/>
+        <rect width="16" height="16" fill="none" stroke="#0A2A4A" stroke-width="1"/>
+      </svg>
+      <div class="facelabel">SIDE</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#1E7FC8"/>
+        <rect x="4" y="8" width="2" height="1" fill="#14568C"/><rect x="10" y="6" width="2" height="1" fill="#14568C"/>
+        <rect width="16" height="16" fill="none" stroke="#0A2A4A" stroke-width="1"/>
+      </svg>
+      <div class="facelabel">BOTTOM</div>
+    </div>
+  </div>
+
+  <!-- TWIN A -->
+  <div class="row">
+    <div>
+      <div class="name" style="color:#ffffff;">TWIN A &middot; LIGHT</div>
+      <div class="desc">White body, one bold black band. No mid-tones.</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#f5f5f5"/>
+        <rect width="16" height="16" fill="none" stroke="#111111" stroke-width="1"/>
+      </svg><div class="facelabel">TOP</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#f5f5f5"/>
+        <rect y="6" width="16" height="4" fill="#111111"/>
+        <rect width="16" height="16" fill="none" stroke="#111111" stroke-width="1"/>
+      </svg><div class="facelabel">SIDE</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#f5f5f5"/>
+        <rect width="16" height="16" fill="none" stroke="#111111" stroke-width="1"/>
+      </svg><div class="facelabel">BOTTOM</div>
+    </div>
+  </div>
+
+  <!-- TWIN B -->
+  <div class="row">
+    <div>
+      <div class="name" style="color:#cbd2da;">TWIN B &middot; DARK</div>
+      <div class="desc">The exact inverse — black body, white band.</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#111111"/>
+        <rect width="16" height="16" fill="none" stroke="#f5f5f5" stroke-width="1"/>
+      </svg><div class="facelabel">TOP</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#111111"/>
+        <rect y="6" width="16" height="4" fill="#f5f5f5"/>
+        <rect width="16" height="16" fill="none" stroke="#f5f5f5" stroke-width="1"/>
+      </svg><div class="facelabel">SIDE</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#111111"/>
+        <rect width="16" height="16" fill="none" stroke="#f5f5f5" stroke-width="1"/>
+      </svg><div class="facelabel">BOTTOM</div>
+    </div>
+  </div>
+
+  <!-- F-BOMB -->
+  <div class="row">
+    <div>
+      <div class="name" style="color:#9a63d6;">F-BOMB</div>
+      <div class="desc">Cracked obsidian, a purple soul-glow sigil.</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#1A1526"/>
+        <path d="M3 3 L6 6 M11 4 L9 8" stroke="#0B0B0F" stroke-width="1" fill="none"/>
+        <rect x="7" y="6" width="1" height="3" fill="#7A3FB0"/>
+        <rect width="16" height="16" fill="none" stroke="#0B0B0F" stroke-width="1"/>
+      </svg><div class="facelabel">TOP</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#1A1526"/>
+        <rect y="0" width="16" height="2" fill="#0B0B0F"/><rect y="14" width="16" height="2" fill="#0B0B0F"/>
+        <rect x="6" y="7" width="1" height="1" fill="#7A3FB0"/><rect x="9" y="7" width="1" height="1" fill="#7A3FB0"/><rect x="7" y="9" width="2" height="1" fill="#7A3FB0"/>
+        <rect width="16" height="16" fill="none" stroke="#0B0B0F" stroke-width="1"/>
+      </svg><div class="facelabel">SIDE</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#0B0B0F"/>
+        <rect x="7" y="8" width="2" height="1" fill="#2E1A47"/>
+        <rect width="16" height="16" fill="none" stroke="#050507" stroke-width="1"/>
+      </svg><div class="facelabel">BOTTOM</div>
+    </div>
+  </div>
+
+  <!-- G-BOMB -->
+  <div class="row">
+    <div>
+      <div class="name" style="color:#9B7BFF;">G-BOMB</div>
+      <div class="desc">Void body, motes suspended mid-face.</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#241B4A"/>
+        <path d="M5 8 Q8 5 11 8" stroke="#3B2A7A" stroke-width="1" fill="none"/>
+        <rect x="7" y="6" width="1" height="1" fill="#9B7BFF"/><rect x="10" y="9" width="1" height="1" fill="#E8E0FF"/>
+        <rect width="16" height="16" fill="none" stroke="#0D0A1A" stroke-width="1"/>
+      </svg><div class="facelabel">TOP</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#3B2A7A"/>
+        <rect y="0" width="16" height="2" fill="#0D0A1A"/><rect y="14" width="16" height="2" fill="#0D0A1A"/>
+        <rect x="6" y="7" width="1" height="1" fill="#9B7BFF"/><rect x="9" y="6" width="1" height="1" fill="#E8E0FF"/><rect x="8" y="9" width="1" height="1" fill="#9B7BFF"/>
+        <rect width="16" height="16" fill="none" stroke="#0D0A1A" stroke-width="1"/>
+      </svg><div class="facelabel">SIDE</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#0D0A1A"/>
+        <rect x="7" y="11" width="1" height="1" fill="#9B7BFF"/><rect x="10" y="12" width="1" height="1" fill="#241B4A"/>
+        <rect width="16" height="16" fill="none" stroke="#080610" stroke-width="1"/>
+      </svg><div class="facelabel">BOTTOM</div>
+    </div>
+  </div>
+
+  <!-- SMART BOMB -->
+  <div class="row">
+    <div>
+      <div class="name" style="color:#79C7B8;">SMART BOMB</div>
+      <div class="desc">Command-block plate, circuits into a glowing core.</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#1C5C56"/>
+        <rect x="7" y="7" width="2" height="2" fill="#B6FFEE"/>
+        <path d="M8 2 L8 7 M8 9 L8 14 M2 8 L7 8 M9 8 L14 8" stroke="#79C7B8" stroke-width="1" fill="none"/>
+        <rect width="16" height="16" fill="none" stroke="#0E2E2E" stroke-width="1"/>
+      </svg><div class="facelabel">TOP</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#1C5C56"/>
+        <rect y="0" width="16" height="2" fill="#0E2E2E"/><rect y="14" width="16" height="2" fill="#0E2E2E"/>
+        <rect x="7" y="7" width="2" height="2" fill="#B6FFEE"/>
+        <path d="M8 2 L8 7 M4 8 L7 8 M9 8 L12 8" stroke="#79C7B8" stroke-width="1" fill="none"/>
+        <rect x="2" y="2" width="1" height="1" fill="#4A5458"/><rect x="13" y="13" width="1" height="1" fill="#4A5458"/>
+        <rect width="16" height="16" fill="none" stroke="#0E2E2E" stroke-width="1"/>
+      </svg><div class="facelabel">SIDE</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#0E2E2E"/>
+        <rect x="7" y="7" width="2" height="2" fill="#1C5C56"/>
+        <path d="M8 4 L8 7 M8 9 L8 12" stroke="#1C5C56" stroke-width="1" fill="none"/>
+        <rect width="16" height="16" fill="none" stroke="#082020" stroke-width="1"/>
+      </svg><div class="facelabel">BOTTOM</div>
+    </div>
+  </div>
+
+  <!-- WHITE OUT -->
+  <div class="row">
+    <div>
+      <div class="name" style="color:#cbd2da;">WHITE OUT</div>
+      <div class="desc">Near-featureless. The unease is the absence.</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#FFFFFF"/>
+        <rect width="16" height="16" fill="none" stroke="#CBD2DA" stroke-width="1"/>
+      </svg><div class="facelabel">TOP</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#FFFFFF"/>
+        <rect x="2" y="7" width="12" height="1" fill="#F2F4F7"/>
+        <rect width="16" height="16" fill="none" stroke="#CBD2DA" stroke-width="1"/>
+      </svg><div class="facelabel">SIDE</div>
+    </div>
+    <div>
+      <svg class="tile" width="88" height="88" viewBox="0 0 16 16">
+        <rect width="16" height="16" fill="#E4E8ED"/>
+        <rect width="16" height="16" fill="none" stroke="#CBD2DA" stroke-width="1"/>
+      </svg><div class="facelabel">BOTTOM</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

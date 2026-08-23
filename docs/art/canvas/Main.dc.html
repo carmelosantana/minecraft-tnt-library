@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .pixel { font-family: 'Silkscreen', ui-monospace, monospace; }
+    .sans { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    svg { image-rendering: pixelated; shape-rendering: crispEdges; }
+    a { color: #4FC3E8; } a:hover { color: #BFEFFF; }
+  </style>
+</helmet>
+
+<div class="sans" style="width: 1240px; background: #0e1013; color: #e9edf2; padding: 40px 44px 48px;">
+
+  <!-- Header -->
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; border-bottom: 2px solid #23272f; padding-bottom: 22px;">
+    <div>
+      <div class="pixel" style="font-size: 30px; letter-spacing: 1px; color: #ffffff;">TNT&nbsp;LIBRARY</div>
+      <div style="font-size: 15px; color: #9aa4b2; margin-top: 10px; max-width: 640px; line-height: 1.5;">
+        Art direction for six custom explosives. Each is signature-colored but still reads instantly as Minecraft TNT — banded caps, a center label band, and a one-pixel dark outline on every face.
+      </div>
+    </div>
+    <div class="pixel" style="font-size: 11px; color: #5c6675; text-align: right; line-height: 1.9;">
+      16&times;16 RGBA<br>top &middot; side &middot; bottom<br>Java + Bedrock
+    </div>
+  </div>
+
+  <!-- Bomb grid -->
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 26px;">
+
+    <!-- WATER BOMB -->
+    <div style="background: #171b21; border: 1px solid #262c35; border-radius: 10px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <svg width="88" height="88" viewBox="0 0 120 120">
+          <polygon points="60,18 102,42 60,66 18,42" fill="#4FC3E8"/>
+          <polygon points="18,42 60,66 60,110 18,86" fill="#14568C"/>
+          <polygon points="60,66 102,42 102,86 60,110" fill="#1E7FC8"/>
+          <polygon points="60,74 102,50 102,60 60,84" fill="#0A2A4A"/>
+          <polygon points="18,50 60,74 60,84 18,60" fill="#0A2A4A"/>
+          <circle cx="81" cy="80" r="4" fill="#BFEFFF"/>
+        </svg>
+        <div>
+          <div class="pixel" style="font-size: 14px; color: #4FC3E8;">WATER BOMB</div>
+          <div style="font-size: 13px; color: #aeb7c4; margin-top: 6px; line-height: 1.45;">Explodes, then floods the crater to the rim. Blue caps, watery body.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 16px;">
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#0A2A4A;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#14568C;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#1E7FC8;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#4FC3E8;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#BFEFFF;"></span>
+      </div>
+    </div>
+
+    <!-- THE TWINS -->
+    <div style="background: #171b21; border: 1px solid #262c35; border-radius: 10px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <svg width="66" height="66" viewBox="0 0 120 120">
+          <polygon points="60,18 102,42 60,66 18,42" fill="#ffffff"/>
+          <polygon points="18,42 60,66 60,110 18,86" fill="#d0d0d0"/>
+          <polygon points="60,66 102,42 102,86 60,110" fill="#f5f5f5"/>
+          <polygon points="60,80 102,56 102,70 60,94" fill="#111111"/>
+          <polygon points="18,56 60,80 60,94 18,70" fill="#111111"/>
+        </svg>
+        <svg width="66" height="66" viewBox="0 0 120 120">
+          <polygon points="60,18 102,42 60,66 18,42" fill="#111111"/>
+          <polygon points="18,42 60,66 60,110 18,86" fill="#050505"/>
+          <polygon points="60,66 102,42 102,86 60,110" fill="#1a1a1a"/>
+          <polygon points="60,80 102,56 102,70 60,94" fill="#f5f5f5"/>
+          <polygon points="18,56 60,80 60,94 18,70" fill="#f5f5f5"/>
+        </svg>
+        <div>
+          <div class="pixel" style="font-size: 14px; color: #e9edf2;">THE TWINS</div>
+          <div style="font-size: 13px; color: #aeb7c4; margin-top: 6px; line-height: 1.45;">Inverse pair. Bands mark a line; detonate what's between them.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 16px;">
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#111111; border:1px solid #333;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#d0d0d0;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#f5f5f5;"></span>
+        <span style="flex:2; height: 18px; border-radius: 3px; background: linear-gradient(90deg,#fff 50%, #111 50%);"></span>
+      </div>
+    </div>
+
+    <!-- F-BOMB -->
+    <div style="background: #171b21; border: 1px solid #262c35; border-radius: 10px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <svg width="88" height="88" viewBox="0 0 120 120">
+          <polygon points="60,18 102,42 60,66 18,42" fill="#2E1A47"/>
+          <polygon points="18,42 60,66 60,110 18,86" fill="#0B0B0F"/>
+          <polygon points="60,66 102,42 102,86 60,110" fill="#1A1526"/>
+          <circle cx="74" cy="82" r="3" fill="#7A3FB0"/>
+          <circle cx="86" cy="76" r="3" fill="#7A3FB0"/>
+          <circle cx="80" cy="92" r="3" fill="#7A3FB0"/>
+          <polygon points="60,66 66,63 64,80 60,82" fill="#7A3FB0" opacity="0.5"/>
+        </svg>
+        <div>
+          <div class="pixel" style="font-size: 14px; color: #9a63d6;">F-BOMB</div>
+          <div style="font-size: 13px; color: #aeb7c4; margin-top: 6px; line-height: 1.45;">Formidi-bomb lure. Cracked obsidian, cursed purple glow — summons a boss.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 16px;">
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#0B0B0F;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#1A1526;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#2E1A47;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#7A3FB0;"></span>
+      </div>
+    </div>
+
+    <!-- G-BOMB -->
+    <div style="background: #171b21; border: 1px solid #262c35; border-radius: 10px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <svg width="88" height="88" viewBox="0 0 120 120">
+          <polygon points="60,18 102,42 60,66 18,42" fill="#3B2A7A"/>
+          <polygon points="18,42 60,66 60,110 18,86" fill="#0D0A1A"/>
+          <polygon points="60,66 102,42 102,86 60,110" fill="#241B4A"/>
+          <rect x="76" y="78" width="4" height="4" fill="#9B7BFF"/>
+          <rect x="88" y="70" width="3" height="3" fill="#E8E0FF"/>
+          <rect x="70" y="90" width="3" height="3" fill="#9B7BFF"/>
+          <rect x="40" y="70" width="3" height="3" fill="#9B7BFF"/>
+        </svg>
+        <div>
+          <div class="pixel" style="font-size: 14px; color: #9B7BFF;">G-BOMB</div>
+          <div style="font-size: 13px; color: #aeb7c4; margin-top: 6px; line-height: 1.45;">Gravity kill. Void indigo with suspended motes — float, then slam.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 16px;">
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#0D0A1A;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#241B4A;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#3B2A7A;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#9B7BFF;"></span>
+      </div>
+    </div>
+
+    <!-- SMART BOMB -->
+    <div style="background: #171b21; border: 1px solid #262c35; border-radius: 10px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <svg width="88" height="88" viewBox="0 0 120 120">
+          <polygon points="60,18 102,42 60,66 18,42" fill="#2E8B7F"/>
+          <polygon points="18,42 60,66 60,110 18,86" fill="#0E2E2E"/>
+          <polygon points="60,66 102,42 102,86 60,110" fill="#1C5C56"/>
+          <rect x="78" y="82" width="6" height="6" fill="#B6FFEE"/>
+          <line x1="81" y1="66" x2="81" y2="82" stroke="#79C7B8" stroke-width="1.5"/>
+          <line x1="81" y1="85" x2="98" y2="76" stroke="#79C7B8" stroke-width="1.5"/>
+          <line x1="81" y1="85" x2="64" y2="94" stroke="#79C7B8" stroke-width="1.5"/>
+        </svg>
+        <div>
+          <div class="pixel" style="font-size: 14px; color: #79C7B8;">SMART BOMB</div>
+          <div style="font-size: 13px; color: #aeb7c4; margin-top: 6px; line-height: 1.45;">Command-block look. Etched circuits, glowing core — programmable.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 16px;">
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#0E2E2E;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#1C5C56;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#2E8B7F;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#79C7B8;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#B6FFEE;"></span>
+      </div>
+    </div>
+
+    <!-- WHITE OUT -->
+    <div style="background: #171b21; border: 1px solid #262c35; border-radius: 10px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <svg width="88" height="88" viewBox="0 0 120 120">
+          <polygon points="60,18 102,42 60,66 18,42" fill="#ffffff"/>
+          <polygon points="18,42 60,66 60,110 18,86" fill="#E4E8ED" stroke="#CBD2DA" stroke-width="0.75"/>
+          <polygon points="60,66 102,42 102,86 60,110" fill="#F2F4F7" stroke="#CBD2DA" stroke-width="0.75"/>
+          <polygon points="60,18 102,42 60,66 18,42" fill="none" stroke="#CBD2DA" stroke-width="1"/>
+        </svg>
+        <div>
+          <div class="pixel" style="font-size: 14px; color: #cbd2da;">WHITE OUT</div>
+          <div style="font-size: 13px; color: #aeb7c4; margin-top: 6px; line-height: 1.45;">The scariest. Featureless white — vacuums everything in, flings it out.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 16px;">
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#FFFFFF;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#F2F4F7;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#E4E8ED;"></span>
+        <span style="flex:1; height: 18px; border-radius: 3px; background:#CBD2DA;"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer cues -->
+  <div style="display: flex; gap: 16px; margin-top: 24px;">
+    <div style="flex: 1; background: #14181e; border: 1px solid #23272f; border-radius: 10px; padding: 18px 20px;">
+      <div class="pixel" style="font-size: 11px; color: #6b7565; letter-spacing: 1px;">STILL READS AS TNT</div>
+      <div style="font-size: 13px; color: #aeb7c4; margin-top: 10px; line-height: 1.6;">
+        Darker banded caps on top &amp; bottom &middot; a horizontal label band across the side &middot; a 1-px darker outline on every face. Signature color and motif change; the TNT silhouette does not.
+      </div>
+    </div>
+    <div style="flex: 1; background: #14181e; border: 1px solid #23272f; border-radius: 10px; padding: 18px 20px;">
+      <div class="pixel" style="font-size: 11px; color: #6b7565; letter-spacing: 1px;">PIPELINE</div>
+      <div style="font-size: 13px; color: #aeb7c4; margin-top: 10px; line-height: 1.6;">
+        These previews show color, silhouette &amp; motif intent. Final assets are true 16&times;16 PNGs — hand-authored for the flat-band faces, ComfyUI for the busy ones — shipped to both Java and Bedrock packs.
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

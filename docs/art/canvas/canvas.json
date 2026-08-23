@@ -1,0 +1,7 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Overview", "x": 0, "y": 0, "w": 1240, "h": 780 },
+    { "file": "FaceSheet.dc.html", "title": "Face Treatments", "x": 1320, "y": 0, "w": 760, "h": 1000 }
+  ],
+  "launch": { "view": "canvas" }
+}
