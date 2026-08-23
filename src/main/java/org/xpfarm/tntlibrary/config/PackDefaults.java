@@ -38,8 +38,29 @@ public record PackDefaults(String url, String sha1) {
     private static final String RESOURCE_PATH = "/pack-defaults.properties";
 
     public PackDefaults {
-        url = url == null ? "" : url;
-        sha1 = sha1 == null ? "" : sha1;
+        url = sanitize(url);
+        sha1 = sanitize(sha1);
+    }
+
+    /**
+     * Normalises one built-in value. {@code null} becomes empty, and so does a value that still
+     * contains an unresolved Maven placeholder ({@code ${...}}).
+     *
+     * <p>The placeholder case is the load-bearing one. {@code pack-defaults.properties} is
+     * Maven-filtered, and {@code pack.sha1} interpolates the {@code tnt.pack.sha1} POM property,
+     * which is empty by default. Most Maven versions filter an empty property to an empty string,
+     * but some environments leave the literal {@code ${tnt.pack.sha1}} in the file instead -- so a
+     * plain build with no {@code -Dtnt.pack.sha1} can ship either an empty value or the raw
+     * placeholder. Both mean exactly the same thing -- "no built-in pack for this build" -- so both
+     * must collapse to empty here. Without this, the literal placeholder would flow into {@link
+     * TntLibraryConfig} as an invalid SHA-1 and provoke a spurious WARNING on a build that simply
+     * has no baked-in pack yet.
+     */
+    private static String sanitize(String value) {
+        if (value == null || value.contains("${")) {
+            return "";
+        }
+        return value;
     }
 
     /** Builds a {@link PackDefaults} directly from known values, bypassing the classpath resource

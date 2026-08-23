@@ -31,6 +31,17 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!--
+            SHA-1 of the published, PackSquash-optimised resource pack for this exact version.
+            Empty by default: a plain local `mvn package` bakes in an empty built-in pack.sha1,
+            which TntLibraryConfig treats as "not configured yet" (INFO, pack delivery disabled).
+            CI computes the real hash from the optimised zip BEFORE this build runs (PackSquash must
+            run first; see .github/workflows/build.yml) and passes it with -Dtnt.pack.sha1=<hash>,
+            so the shipped JAR's built-in fallback always matches the pack published alongside it.
+            See src/main/resources/pack-defaults.properties.
+        -->
+        <tnt.pack.sha1></tnt.pack.sha1>
     </properties>
 
     <repositories>

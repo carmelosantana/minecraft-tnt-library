@@ -15,8 +15,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 is required by the PackSquash step below, not by the Maven build.
+      # PackSquash derives each pack file's modification time from the commit that last touched it,
+      # so that the optimised zip is byte-reproducible across runs; with the default shallow clone
+      # it has no history to read and fails with "The full commit history must be checked out".
       - name: Check out source
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 25
         uses: actions/setup-java@v5
@@ -25,11 +31,84 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Test and package
-        run: mvn --batch-mode --no-transfer-progress clean verify
+      # help:evaluate reads the POM without compiling or packaging anything, so the version is
+      # available before either the pack (below) or the JAR (further down) exist -- both of their
+      # published filenames need it.
+      - name: Determine project version
+        id: version
+        run: |
+          VERSION=$(mvn --batch-mode --no-transfer-progress -q help:evaluate \
+            -Dexpression=project.version -DforceStdout)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      # Record bare filenames, not build-time paths. Release assets download flat,
-      # so a `target/`-prefixed entry makes `sha256sum --check` fail to find the file.
+      - name: Prepare PackSquash output directory
+        run: mkdir -p pack-dist
+
+      # PackSquash is AGPL-3.0, the same licence as this project, and runs as a separate process
+      # invoked by the action (not linked into our code), so there is no linking concern. Pinned to
+      # the action's major version tag; the PackSquash release itself is pinned to a specific version
+      # for reproducibility, since "latest" could otherwise change what CI produces without any change
+      # to this repo.
+      #
+      # packsquash-options.toml disables PackSquash's own pack.mcmeta parsing -- see the comment there
+      # for why: PackSquash v0.4.1 hard-requires the legacy "pack_format" key our pack.mcmeta
+      # correctly omits (Minecraft 26.1.x replaced it with min_format/max_format), and has no other
+      # way to opt out of that requirement.
+      #
+      # Runs BEFORE the Maven build (and writes to pack-dist/, outside target/ -- see
+      # packsquash-options.toml) to solve a chicken-and-egg problem: the pack's real SHA-1 can only be
+      # computed after PackSquash rewrites the zip, but that hash also needs to be baked into the
+      # JAR's built-in fallback (pack-defaults.properties) during `mvn package`. Hashing the optimised
+      # zip here and re-invoking Maven with -Dtnt.pack.sha1 below breaks the cycle.
+      - name: Optimise Java resource pack with PackSquash
+        uses: ComunidadAylas/PackSquash-action@v4
+        with:
+          packsquash_version: v0.4.1
+          options: packsquash-options.toml
+
+      # The SHA-1 must be computed from these exact optimised bytes, never from the pre-PackSquash
+      # contents, because PackSquash rewrites them.
+      #
+      # Why the SHA-1 matters: the Minecraft client caches a downloaded resource pack under
+      # downloads/<pack-id>/<declared-sha1> and, on a hash match, makes no HTTP request at all. So a
+      # pack whose contents change without its declared SHA-1 changing leaves returning players on the
+      # stale pack indefinitely, silently, with nothing in the server log. Our download URL carries
+      # the release tag, so each version gets both a new URL and a new hash.
+      - name: Hash the resource pack
+        id: pack_hash
+        run: |
+          set -euo pipefail
+          SHA1=$(sha1sum pack-dist/packsquash-pack.zip | cut -d' ' -f1)
+          echo "Resource pack SHA-1: ${SHA1}"
+          echo "sha1=${SHA1}" >> "$GITHUB_OUTPUT"
+
+      # Feeds the hash computed above into pack-defaults.properties (Maven-filtered; see that file and
+      # org.xpfarm.tntlibrary.config.PackDefaults / TntLibraryConfig) so the shipped JAR carries its
+      # own matching pack URL and hash with zero operator configuration required. A plain local
+      # `mvn clean verify` with no -D (e.g. a contributor's own machine) leaves tnt.pack.sha1 empty,
+      # which TntLibraryConfig treats exactly like an unconfigured value: pack delivery disabled,
+      # logged at INFO, never a warning.
+      - name: Test and package
+        run: |
+          mvn --batch-mode --no-transfer-progress \
+            "-Dtnt.pack.sha1=${{ steps.pack_hash.outputs.sha1 }}" clean verify
+
+      # Move the already-optimised, already-hashed pack into target/ under its published, versioned
+      # filename, and write its .sha1 sidecar -- the exact same hash that was just baked into the JAR
+      # above, so `url` and `sha1` always come from the same build and can never mismatch.
+      - name: Package the resource pack
+        id: pack
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          PACK_ZIP="target/tnt-library-pack-${VERSION}.zip"
+          mv pack-dist/packsquash-pack.zip "${PACK_ZIP}"
+          printf '%s' "${{ steps.pack_hash.outputs.sha1 }}" > "${PACK_ZIP}.sha1"
+          echo "zip=${PACK_ZIP}" >> "$GITHUB_OUTPUT"
+          echo "sha1_file=${PACK_ZIP}.sha1" >> "$GITHUB_OUTPUT"
+
+      # Record bare filenames, not build-time paths. Release assets download flat, so a
+      # `target/`-prefixed entry makes `sha256sum --check` fail to find the file.
       - name: Create checksum
         run: cd target && find . -maxdepth 1 -name '*.jar' ! -name 'original-*' -printf '%f\0' | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
 
@@ -41,6 +120,8 @@ jobs:
             target/*.jar
             !target/original-*.jar
             target/SHA256SUMS.txt
+            target/tnt-library-pack-*.zip
+            target/tnt-library-pack-*.zip.sha1
           if-no-files-found: error
 
       - name: Upload tagged release assets
@@ -51,3 +132,4 @@ jobs:
           gh release view "${{ github.ref_name }}" >/dev/null 2>&1 || gh release create "${{ github.ref_name }}" --generate-notes --title "${{ github.ref_name }}"
           find target -maxdepth 1 -name '*.jar' ! -name 'original-*' -print0 | xargs -0 gh release upload "${{ github.ref_name }}" --clobber
           gh release upload "${{ github.ref_name }}" target/SHA256SUMS.txt --clobber
+          gh release upload "${{ github.ref_name }}" "${{ steps.pack.outputs.zip }}" "${{ steps.pack.outputs.sha1_file }}" --clobber

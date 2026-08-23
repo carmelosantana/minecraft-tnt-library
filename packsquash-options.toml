@@ -1,0 +1,35 @@
+# Minimal PackSquash options for optimising the Java resource pack shipped at
+# src/main/resources/pack/ (see .github/workflows/build.yml, which invokes PackSquash via
+# ComunidadAylas/PackSquash-action). Kept in the repo, not inline in the workflow, so a local
+# PackSquash run reproduces CI exactly: `packsquash packsquash-options.toml`.
+#
+# pack_directory already has pack.mcmeta at its own root, so the emitted zip does too -- a pack
+# whose pack.mcmeta is nested one level down (e.g. inside a "pack/" folder in the zip) is silently
+# invalid to the Minecraft client.
+pack_directory = 'src/main/resources/pack'
+
+# Deliberately OUTSIDE target/. build.yml runs PackSquash BEFORE the Maven build, computes this
+# zip's SHA-1, and feeds it back into `mvn ... -Dtnt.pack.sha1=<hash> clean verify` so the shipped
+# JAR bakes in its own matching pack URL and hash (see pack-defaults.properties). That build starts
+# with `clean`, which deletes target/ -- so this output must live somewhere `clean` does not reach,
+# or the very next step would destroy it.
+output_file_path = 'pack-dist/packsquash-pack.zip'
+
+# PackSquash (as of v0.4.1, the latest release) hard-requires a legacy "pack_format" integer key in
+# pack.mcmeta and aborts with "Missing \"pack_format\" key in pack metadata object" if it is absent
+# -- see packages/packsquash/src/pack_meta.rs in ComunidadAylas/PackSquash. It has not yet been
+# updated for the "min_format" / "max_format" pair that replaced "pack_format" in Minecraft 25w31a
+# (shipped in 26.1.x, see https://github.com/ComunidadAylas/PackSquash/pull/387, open and unmerged
+# as of this writing). Our pack.mcmeta correctly uses min_format/max_format per the current spec
+# and omits "pack_format", so PackSquash's own metadata parsing must never run against it.
+#
+# pack.mcmeta is only read at all if validate_pack_metadata_file, automatic_minecraft_quirks_detection,
+# or automatic_asset_types_mask_detection is true (see packages/packsquash/src/lib.rs, read_pack_meta).
+# Setting all three to false skips that parsing entirely; the file still ships in the output ZIP,
+# untouched apart from whitespace minification, and none of the quirk/asset-type detection those
+# flags enable is needed for this pack (a handful of static JSON files and a few PNGs, no textures
+# with special per-Minecraft-version quirks). Revisit this once PackSquash supports min_format/
+# max_format upstream.
+validate_pack_metadata_file = false
+automatic_minecraft_quirks_detection = false
+automatic_asset_types_mask_detection = false
