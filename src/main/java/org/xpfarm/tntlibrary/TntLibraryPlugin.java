@@ -9,19 +9,53 @@
  */
 package org.xpfarm.tntlibrary;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.xpfarm.tntlibrary.command.TntCommand;
+import org.xpfarm.tntlibrary.config.TntLibraryConfig;
+import org.xpfarm.tntlibrary.core.CustomTnt;
+import org.xpfarm.tntlibrary.core.TntRegistry;
+import org.xpfarm.tntlibrary.detonation.DetonationListener;
+import org.xpfarm.tntlibrary.detonation.Detonator;
+import org.xpfarm.tntlibrary.item.BombRecipes;
+import org.xpfarm.tntlibrary.item.WaterBomb;
+import org.xpfarm.tntlibrary.listener.IgnitionListener;
+import org.xpfarm.tntlibrary.listener.PlacementListener;
+import org.xpfarm.tntlibrary.protect.AllowAllProtection;
+import org.xpfarm.tntlibrary.protect.ProtectionService;
+import org.xpfarm.tntlibrary.rig.TntRig;
 
 /**
- * Plugin bootstrap for TNT Library.
+ * Plugin bootstrap for TNT Library: the Phase-1 wiring that connects the already-built layers so a
+ * player can craft, place, ignite, and detonate a Water Bomb.
  *
- * <p>This is the gate-2/3 scaffold: it establishes the buildable plugin skeleton, its descriptor,
- * and its configuration. The custom-TNT framework — the {@code CustomTnt} definition, the
- * {@code TntRegistry}, the display-entity placement rig, and the individual bombs — is built at the
- * dev gate. Bedrock/Geyser resource-pack assets are installed in {@link #onLoad()} (Geyser reads its
- * {@code custom_mappings/} during its own {@code onEnable}), so that hook is reserved here even
- * though it currently does nothing.
+ * <h2>What is wired here</h2>
+ *
+ * <p>{@link #onEnable()} builds the runtime graph once — config snapshot, {@link ProtectionService},
+ * {@link TntRegistry} (only bombs whose config says {@code enabled}), {@link TntRig}, {@link
+ * Detonator} — then registers the crafting recipes and the three listeners ({@link
+ * DetonationListener}, {@link PlacementListener}, {@link IgnitionListener}) and the {@code
+ * /tntlibrary} command. The mutable services are exposed through package-visible getters so the
+ * listeners and command always read the <em>current</em> registry/detonator, which is what lets
+ * {@link #reloadPlugin()} swap them without re-registering anything.
+ *
+ * <h2>Phase-1 scope</h2>
+ *
+ * <p>Only the Water Bomb has a {@link CustomTnt} implementation this phase, so it is the only bomb
+ * ever registered even though the config and permissions enumerate all six. A placed bomb is a
+ * display-entity rig, not a real ignitable block, so <b>only flint &amp; steel right-click ignition
+ * is supported</b> — redstone/fire ignition is a documented Phase-1 limitation, not wired here.
  */
 public final class TntLibraryPlugin extends JavaPlugin {
+
+    private TntLibraryConfig config;
+    private ProtectionService protection;
+    private TntRegistry registry;
+    private TntRig tntRig;
+    private Detonator detonator;
 
     @Override
     public void onLoad() {
@@ -31,11 +65,117 @@ public final class TntLibraryPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        getLogger().info("TNTLibrary enabled (scaffold) — no bombs registered yet.");
+        this.config = TntLibraryConfig.from(getConfig(), getLogger());
+        this.protection = new AllowAllProtection();
+
+        this.registry = new TntRegistry();
+        registerEnabledBombs(config);
+
+        this.tntRig = new TntRig(this);
+        int orphans = tntRig.cleanupOrphans();
+
+        this.detonator = new Detonator(this, config, protection);
+
+        for (CustomTnt bomb : registry.all()) {
+            BombRecipes.register(this, bomb);
+        }
+
+        PluginManager pm = getServer().getPluginManager();
+        pm.registerEvents(new DetonationListener(this, protection), this);
+        pm.registerEvents(new PlacementListener(this), this);
+        pm.registerEvents(new IgnitionListener(this), this);
+
+        TntCommand command = new TntCommand(this);
+        PluginCommand pluginCommand = getCommand("tntlibrary");
+        if (pluginCommand != null) {
+            pluginCommand.setExecutor(command);
+            pluginCommand.setTabCompleter(command);
+        } else {
+            getLogger().severe(
+                    "Command 'tntlibrary' is missing from plugin.yml — /tntlibrary will not work.");
+        }
+
+        getLogger().info("TNTLibrary enabled — " + registry.size() + " bomb(s) registered"
+                + (registry.size() > 0 ? " " + registry.ids() : "")
+                + (orphans > 0 ? "; cleaned " + orphans + " orphaned rig entity(ies)" : "") + ".");
     }
 
     @Override
     public void onDisable() {
+        // Placed rigs are intentionally left in the world; they are swept as orphans on next enable.
+        // Bukkit cancels this plugin's scheduler tasks (including live fuses) and unregisters its
+        // listeners automatically on disable, so only the recipes need explicit teardown.
+        if (registry != null) {
+            for (CustomTnt bomb : registry.all()) {
+                BombRecipes.unregister(this, bomb);
+            }
+        }
         getLogger().info("TNTLibrary disabled.");
+    }
+
+    /**
+     * Reloads {@code config.yml} and rebuilds the config-derived services (registry, detonator) and
+     * the crafting recipes to match the new enabled set. Listeners and the command need no
+     * re-registration because they read the current services through this plugin's getters.
+     *
+     * @return a human-readable summary of what changed, for the {@code /tntlibrary reload} reply
+     */
+    public String reloadPlugin() {
+        Set<String> before = new LinkedHashSet<>(registry.ids());
+        for (CustomTnt bomb : registry.all()) {
+            BombRecipes.unregister(this, bomb);
+        }
+
+        reloadConfig();
+        this.config = TntLibraryConfig.from(getConfig(), getLogger());
+        this.registry = new TntRegistry();
+        registerEnabledBombs(config);
+        this.detonator = new Detonator(this, config, protection);
+        for (CustomTnt bomb : registry.all()) {
+            BombRecipes.register(this, bomb);
+        }
+
+        Set<String> after = new LinkedHashSet<>(registry.ids());
+        Set<String> added = new LinkedHashSet<>(after);
+        added.removeAll(before);
+        Set<String> removed = new LinkedHashSet<>(before);
+        removed.removeAll(after);
+
+        StringBuilder summary = new StringBuilder()
+                .append("reloaded; ").append(after.size()).append(" bomb(s) registered ").append(after);
+        if (!added.isEmpty()) {
+            summary.append(", added ").append(added);
+        }
+        if (!removed.isEmpty()) {
+            summary.append(", removed ").append(removed);
+        }
+        return summary.toString();
+    }
+
+    /** Registers every Phase-1 bomb whose config says {@code enabled}. Phase 1 = only the Water Bomb. */
+    private void registerEnabledBombs(TntLibraryConfig cfg) {
+        if (cfg.bomb(WaterBomb.ID).enabled()) {
+            registry.register(new WaterBomb(cfg.bomb(WaterBomb.ID).fuseTicks()));
+        }
+    }
+
+    /** The live bomb registry; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */
+    public TntRegistry registry() {
+        return registry;
+    }
+
+    /** The shared placement rig service; stable across a reload. */
+    public TntRig tntRig() {
+        return tntRig;
+    }
+
+    /** The live detonation entry point; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */
+    public Detonator detonator() {
+        return detonator;
+    }
+
+    /** The current validated configuration snapshot. */
+    public TntLibraryConfig config() {
+        return config;
     }
 }

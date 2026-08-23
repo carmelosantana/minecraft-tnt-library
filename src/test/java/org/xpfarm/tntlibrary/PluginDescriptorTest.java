@@ -97,6 +97,17 @@ final class PluginDescriptorTest {
         Map<String, Object> permissions = (Map<String, Object>) parse(PLUGIN_YML).get("permissions");
         assertNotNull(permissions, "permissions section is required");
         assertTrue(permissions.containsKey("tntlibrary.admin"), "tntlibrary.admin must be declared");
+
+        // The command layer (TntCommand) gates give/list on this node and reload on the next.
+        assertTrue(permissions.containsKey("tntlibrary.command.give"),
+                "tntlibrary.command.give must be declared — TntCommand checks it for give/list");
+        assertTrue(permissions.containsKey("tntlibrary.command.reload"),
+                "tntlibrary.command.reload must be declared — TntCommand checks it for reload");
+
+        // The listener layer (PlacementListener/IgnitionListener) gates placing and igniting the
+        // Water Bomb on its per-bomb use node (Permissions.use("waterbomb")).
+        assertTrue(permissions.containsKey("tntlibrary.use.waterbomb"),
+                "tntlibrary.use.waterbomb must be declared — the place/ignite listeners check it");
     }
 
     @Test
