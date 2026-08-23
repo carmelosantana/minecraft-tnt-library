@@ -9,6 +9,8 @@
  */
 package org.xpfarm.tntlibrary.config;
 
+import org.xpfarm.tntlibrary.twins.TwinColor;
+
 /**
  * The catalogue of known bombs and the exact {@code config.yml} keys, defaults, and shape of each.
  *
@@ -23,7 +25,7 @@ package org.xpfarm.tntlibrary.config;
  */
 public enum BombType {
     WATERBOMB("waterbomb", true, "radius", 4, "fuse-ticks", 80, null, 0),
-    TWINS("twins", true, "radius", 3, "fuse-ticks", 80, null, 0),
+    TWINS("twins", true, "radius", 3, "fuse-ticks", 80, "max-pair-distance", 64),
     SMARTBOMB("smartbomb", true, "default-radius", 4, "default-delay-ticks", 100, null, 0),
     FBOMB("fbomb", false, null, 0, "fuse-ticks", 60, null, 0),
     GBOMB("gbomb", false, "radius", 20, "fuse-ticks", 60, "hang-ticks", 50),
@@ -106,5 +108,20 @@ public enum BombType {
                 radiusKey == null ? 0 : radiusDefault,
                 fuseDefault,
                 hangKey == null ? 0 : hangDefault);
+    }
+
+    /**
+     * The base config/permission id for a possibly-variant bomb id — the canonical resolver the
+     * wiring layer uses so a variant id (e.g. {@code twins_white}/{@code twins_black}) reads the
+     * shared {@code bombs.twins} config section and the shared {@code tntlibrary.use.twins}
+     * permission node. A non-variant id is returned unchanged. The Twins are the only bomb that ships
+     * as variants today, so this delegates to {@link TwinColor#baseId(String)}, the single source of
+     * that mapping; a future variant bomb registers its own mapping there and inherits this resolver.
+     *
+     * @param id any bomb id, variant or not
+     * @return the base id whose {@code bombs.<id>} section and {@code tntlibrary.use.<id>} node govern it
+     */
+    public static String baseId(String id) {
+        return TwinColor.baseId(id);
     }
 }

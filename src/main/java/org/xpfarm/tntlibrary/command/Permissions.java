@@ -10,6 +10,7 @@
 package org.xpfarm.tntlibrary.command;
 
 import java.util.Objects;
+import org.xpfarm.tntlibrary.config.BombType;
 
 /**
  * The permission-node strings this plugin checks, in one place.
@@ -42,9 +43,13 @@ public final class Permissions {
      * The per-bomb use node for {@code bombId}, e.g. {@code use("waterbomb")} yields {@code
      * tntlibrary.use.waterbomb} — the node the placement and ignition listeners check.
      *
-     * @param bombId a bomb's stable id; never {@code null}
+     * <p>A variant id resolves to its base node via {@link BombType#baseId(String)}, so {@code
+     * use("twins_white")} and {@code use("twins_black")} both yield {@code tntlibrary.use.twins} —
+     * the two Twin variants share one permission, matching their shared {@code bombs.twins} config.
+     *
+     * @param bombId a bomb's stable id (variant or base); never {@code null}
      */
     public static String use(String bombId) {
-        return USE_PREFIX + Objects.requireNonNull(bombId, "bombId");
+        return USE_PREFIX + BombType.baseId(Objects.requireNonNull(bombId, "bombId"));
     }
 }

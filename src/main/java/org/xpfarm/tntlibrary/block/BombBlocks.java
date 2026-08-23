@@ -19,6 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.NoteBlock;
 import org.xpfarm.tntlibrary.config.BombType;
+import org.xpfarm.tntlibrary.twins.TwinColor;
 
 /**
  * The single source of truth linking each bomb id to the real vanilla {@code note_block} blockstate
@@ -37,11 +38,17 @@ import org.xpfarm.tntlibrary.config.BombType;
  *
  * <h2>The claimed states</h2>
  *
- * <p>Every bomb claims {@code instrument=pling, powered=false} and a distinct {@code note} value
- * ({@value #FIRST_NOTE}..) assigned in {@link BombType} declaration order. {@code pling} plus a high,
- * specific note keeps accidental collision with a hand-tuned vanilla note block vanishingly unlikely;
- * the placement layer additionally physics-locks the block so the instrument can never re-derive from
- * the block beneath it.
+ * <p>Every placed bomb claims {@code instrument=pling, powered=false} and a distinct {@code note}
+ * value ({@value #FIRST_NOTE}..) assigned in {@link BombType} declaration order. {@code pling} plus a
+ * high, specific note keeps accidental collision with a hand-tuned vanilla note block vanishingly
+ * unlikely; the placement layer additionally physics-locks the block so the instrument can never
+ * re-derive from the block beneath it.
+ *
+ * <p><b>Variants.</b> Most bombs map one config id to one state. The Twins are the exception: they
+ * ship as two placed variants — {@code twins_white} takes the base {@code twins} declaration slot and
+ * {@code twins_black} takes {@link #TWINS_BLACK_NOTE} just below the sequential range — while the base
+ * {@code twins} id itself is config/permission-only and claims no placed state. So the table is keyed
+ * by <em>placed</em> id (variant where a bomb has variants), not by {@link BombType} id.
  *
  * <h2>Pure vs. runtime</h2>
  *
@@ -61,10 +68,18 @@ public final class BombBlocks {
     /** The first {@code note} value handed out; subsequent bombs take {@value #FIRST_NOTE}+1, +2, … */
     public static final int FIRST_NOTE = 19;
 
-    /** Bomb id → the {@code note} value it claims. Insertion order follows {@link BombType}. */
+    /**
+     * The {@code note} the Black Twin claims — just below {@link #FIRST_NOTE}. The Twins are the one
+     * bomb that ships as two placed <em>variants</em> rather than a single state: {@code twins_white}
+     * takes the base {@code twins} declaration slot, and {@code twins_black} takes this dedicated slot
+     * below the sequential range so it collides with no other bomb.
+     */
+    private static final int TWINS_BLACK_NOTE = FIRST_NOTE - 1;
+
+    /** Bomb (or variant) id → the {@code note} value it claims. Insertion order follows {@link BombType}. */
     private static final Map<String, Integer> NOTE_BY_ID;
 
-    /** Full state key (e.g. {@code instrument=pling,note=19,powered=false}) → bomb id. */
+    /** Full state key (e.g. {@code instrument=pling,note=19,powered=false}) → bomb (or variant) id. */
     private static final Map<String, String> ID_BY_STATE_KEY;
 
     static {
@@ -72,12 +87,26 @@ public final class BombBlocks {
         Map<String, String> idByKey = new LinkedHashMap<>();
         int note = FIRST_NOTE;
         for (BombType type : BombType.values()) {
-            noteById.put(type.id(), note);
-            idByKey.put(stateKey(note), type.id());
-            note++;
+            int claimed = note++;
+            if (type.id().equals(TwinColor.BASE_ID)) {
+                // The Twins ship as two placed variants, not one base state: twins_white takes this
+                // base declaration slot, twins_black a dedicated slot below FIRST_NOTE. The base
+                // `twins` id itself is config/permission-only and claims no placed state.
+                claim(noteById, idByKey, TwinColor.WHITE.variantId(), claimed);
+                claim(noteById, idByKey, TwinColor.BLACK.variantId(), TWINS_BLACK_NOTE);
+            } else {
+                claim(noteById, idByKey, type.id(), claimed);
+            }
         }
         NOTE_BY_ID = Map.copyOf(noteById);
         ID_BY_STATE_KEY = Map.copyOf(idByKey);
+    }
+
+    /** Records one id↔state claim in both directions. */
+    private static void claim(
+            Map<String, Integer> noteById, Map<String, String> idByKey, String id, int note) {
+        noteById.put(id, note);
+        idByKey.put(stateKey(note), id);
     }
 
     private BombBlocks() {}

@@ -22,6 +22,8 @@ import org.bukkit.event.block.NotePlayEvent;
 import org.xpfarm.tntlibrary.TntLibraryPlugin;
 import org.xpfarm.tntlibrary.block.BombBlocks;
 import org.xpfarm.tntlibrary.core.CustomTnt;
+import org.xpfarm.tntlibrary.twins.TwinColor;
+import org.xpfarm.tntlibrary.twins.TwinLocation;
 
 /**
  * Keeps a placed bomb block behaving like a bomb, not like a note block.
@@ -83,11 +85,19 @@ public final class BombGuardListener implements Listener {
         if (bombId.isEmpty()) {
             return;
         }
+        String id = bombId.get();
         event.setDropItems(false); // never drop the underlying note block
-        Optional<CustomTnt> bomb = plugin.registry().get(bombId.get());
+        Optional<CustomTnt> bomb = plugin.registry().get(id);
         if (bomb.isPresent() && event.getPlayer().getGameMode() != GameMode.CREATIVE) {
             block.getWorld().dropItemNaturally(block.getLocation().toCenterLocation(),
                     bomb.get().createItem());
+        }
+
+        // A broken Twin leaves the shared index (same key construction as placement/detonate), so a
+        // stale location can never be picked as a partner. A no-op for non-Twin bombs.
+        if (TwinColor.isVariant(id)) {
+            plugin.placedTwinIndex().remove(
+                    new TwinLocation(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ()));
         }
     }
 }

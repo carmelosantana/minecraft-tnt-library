@@ -15,44 +15,76 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.xpfarm.tntlibrary.config.BombType;
+import org.xpfarm.tntlibrary.twins.TwinColor;
 
 /**
  * Pins the pure {@link BombBlocks} state-claim table — the contract the Java resource pack and the
  * Geyser {@code custom_mappings} both mirror. These assertions run without a server (no {@link
  * org.bukkit.Bukkit} calls); the {@link org.bukkit.block.data.BlockData} resolution is verified at
  * the runtime gate.
+ *
+ * <p>The table is keyed by <em>placed</em> id, not by {@link BombType} id: most bombs map one config
+ * id to one state, but the Twins ship as two placed variants ({@code twins_white} at the base {@code
+ * twins} slot, {@code twins_black} just below the sequential range) while the base {@code twins} id
+ * itself has no placed state. {@link #PLACED} is the authoritative expected allocation.
  */
 final class BombBlocksTest {
 
+    /** The full expected placed-id → note allocation (variant ids where a bomb has variants). */
+    private static final Map<String, Integer> PLACED;
+
+    static {
+        Map<String, Integer> placed = new LinkedHashMap<>();
+        placed.put("waterbomb", 19);
+        placed.put("twins_white", 20); // takes the base `twins` declaration slot
+        placed.put("twins_black", 18); // dedicated slot just below FIRST_NOTE
+        placed.put("smartbomb", 21);
+        placed.put("fbomb", 22);
+        placed.put("gbomb", 23);
+        placed.put("whiteout", 24);
+        PLACED = Map.copyOf(placed);
+    }
+
     @Test
-    void everyBombTypeHasAClaimedNote() {
+    void everyPlacedIdHasItsClaimedNoteAndTheBaseTwinsHasNone() {
+        PLACED.forEach((id, note) ->
+                assertEquals(note, BombBlocks.noteFor(id).orElseThrow(), "wrong note for " + id));
+        // The base `twins` id is config/permission-only — it claims no placed state.
+        assertTrue(BombBlocks.noteFor(TwinColor.BASE_ID).isEmpty(),
+                "base twins id must claim no placed state (it splits into variants)");
+    }
+
+    @Test
+    void everyNonVariantBombTypeIsPlacedAndTwinsSplitsIntoVariants() {
         for (BombType type : BombType.values()) {
-            assertTrue(BombBlocks.noteFor(type.id()).isPresent(),
-                    "no claimed note for bomb id " + type.id());
+            if (type.id().equals(TwinColor.BASE_ID)) {
+                assertTrue(BombBlocks.noteFor(type.id()).isEmpty(),
+                        "base twins must have no placed state");
+                assertTrue(BombBlocks.noteFor(TwinColor.WHITE.variantId()).isPresent());
+                assertTrue(BombBlocks.noteFor(TwinColor.BLACK.variantId()).isPresent());
+            } else {
+                assertTrue(BombBlocks.noteFor(type.id()).isPresent(),
+                        "no claimed note for bomb id " + type.id());
+            }
         }
     }
 
     @Test
-    void notesAreDistinctAndStartAtNineteenInDeclarationOrder() {
-        int expected = BombBlocks.FIRST_NOTE;
+    void claimedNotesAreDistinct() {
         Set<Integer> seen = new HashSet<>();
-        for (BombType type : BombType.values()) {
-            int note = BombBlocks.noteFor(type.id()).orElseThrow();
-            assertEquals(expected, note, "note for " + type.id() + " out of expected order");
-            assertTrue(seen.add(note), "duplicate note " + note);
-            expected++;
-        }
+        PLACED.values().forEach(note ->
+                assertTrue(seen.add(note), "duplicate note " + note));
     }
 
     @Test
     void claimedNotesStayWithinTheValidNoteBlockRange() {
-        for (BombType type : BombType.values()) {
-            int note = BombBlocks.noteFor(type.id()).orElseThrow();
-            assertTrue(note >= 0 && note <= 24, "note " + note + " outside 0..24 for " + type.id());
-        }
+        PLACED.forEach((id, note) ->
+                assertTrue(note >= 0 && note <= 24, "note " + note + " outside 0..24 for " + id));
     }
 
     @Test
@@ -63,11 +95,19 @@ final class BombBlocksTest {
     }
 
     @Test
-    void stateKeyAndBombIdRoundTripForEveryBomb() {
-        for (BombType type : BombType.values()) {
-            String key = BombBlocks.stateKeyFor(type.id());
-            assertEquals(type.id(), BombBlocks.bombIdForStateKey(key).orElseThrow(),
-                    "round-trip failed for " + type.id());
+    void twinVariantsClaimTheirOwnDistinctStates() {
+        assertEquals("instrument=pling,note=20,powered=false",
+                BombBlocks.stateKeyFor("twins_white"));
+        assertEquals("instrument=pling,note=18,powered=false",
+                BombBlocks.stateKeyFor("twins_black"));
+    }
+
+    @Test
+    void stateKeyAndBombIdRoundTripForEveryPlacedId() {
+        for (String id : PLACED.keySet()) {
+            String key = BombBlocks.stateKeyFor(id);
+            assertEquals(id, BombBlocks.bombIdForStateKey(key).orElseThrow(),
+                    "round-trip failed for " + id);
         }
     }
 
@@ -77,6 +117,13 @@ final class BombBlocksTest {
         assertTrue(BombBlocks.noteFor("nope").isEmpty());
         assertTrue(BombBlocks.bombIdForStateKey("instrument=harp,note=0,powered=false").isEmpty());
         assertFalse(BombBlocks.bombIdForStateKey("instrument=pling,note=19,powered=true").isPresent());
+    }
+
+    @Test
+    void theBaseTwinsIdHasNoState() {
+        // The base `twins` id resolves to no placed state at all: no note, and stateKeyFor rejects it.
+        assertThrows(IllegalArgumentException.class, () -> BombBlocks.stateKeyFor(TwinColor.BASE_ID));
+        assertTrue(BombBlocks.noteFor(TwinColor.BASE_ID).isEmpty());
     }
 
     @Test
