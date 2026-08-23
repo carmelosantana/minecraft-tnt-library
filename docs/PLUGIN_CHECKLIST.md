@@ -194,10 +194,10 @@ Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via 
 
 ## 10. Updater
 
-- [ ] Updater manifest/tests cover repository, destination, anchored asset regex, legacy globs, enabled state, and optional pin.
-- [ ] Fresh install, upgrade, no-op, legacy archival, endpoint failure, and checksum failure behaviors pass.
-- [ ] Updater dry-run uses a disposable directory and never a production plugin directory.
-- [ ] Failure retains the installed JAR and default fail-open behavior permits Minecraft startup.
+- [x] Updater manifest/tests cover repository, destination, anchored asset regex, legacy globs, enabled state, and optional pin. → entry added to `carmelosantana/minecraft-plugin-updater` `plugins.json` (commit `60374e2`): `repo carmelosantana/minecraft-tnt-library`, `destination tnt-library.jar` (unique), `asset_regex ^tnt-library-[0-9].*\.jar$` (anchored), `legacy_globs ["tnt-library-[0-9]*.jar"]`, enabled by default (no `enabled`/`pin`, matching the roster). `json.tool` valid; 11 updater unit tests pass.
+- [x] Fresh install, upgrade, no-op, legacy archival, endpoint failure, and checksum failure behaviors pass. → dry-run: `TNT Library: would install v0.1.0`. Sandbox real run: `installed v0.1.0; archived legacy JARs: tnt-library-0.0.9.jar`, old destination backed up, then `already current (v0.1.0)` on repeat. Endpoint/download/checksum-failure paths covered by the passing unit suite (`test_bad_checksum_preserves_installed_jar` et al.).
+- [x] Updater dry-run uses a disposable directory and never a production plugin directory. → all runs used `/tmp` sandbox dirs (`--plugins-dir`/`--state-file`/`--backup-dir` all inside `/tmp`); production `/minecraft` never touched; sandbox discarded after.
+- [x] Failure retains the installed JAR and default fail-open behavior permits Minecraft startup. → verified by `test_bad_checksum_preserves_installed_jar` (installed JAR preserved on checksum failure) and the updater's fail-open, warn-and-continue default.
 
 ## 11. Deployment
 
