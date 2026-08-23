@@ -10,7 +10,9 @@ Textures are **placeholder** this phase (art-direction track runs in parallel); 
 | T2 | `TntLibraryConfig` immutable record from YAML; per-bomb + protection; never throws | `…config` | — | none |
 | T3 | Water Bomb item builder (`Material.TNT` + `item_model` + PDC id) + `ShapedRecipe` (shape-as-data) | `…item` | T1 | none |
 | T4 | Display-entity placement rig: place → `BlockDisplay`+`Interaction` (PDC-tagged); ignite → primed | `…rig` | T1 | none |
-| T5 | Detonation framework: listeners, phase runner (1 `runTaskTimer`+tick), region-protection reflective adapter, Water Bomb `detonate` (explosion + crater water-fill) | `…detonation` | T1–T4 | **crater-fill geometry** — propose before assuming |
+| T5 | Detonation framework: listeners, phase runner (1 `runTaskTimer`+tick), region-protection reflective adapter, Water Bomb `detonate` (explosion + crater water-fill) | `…detonation` | T1–T4 | ~~crater-fill geometry~~ **RESOLVED** ↓ |
+
+**Water Bomb crater-fill (owner decision, 2026-08-23):** capture `EntityExplodeEvent.blockList()`; place water **SOURCE** blocks in every destroyed cell **at or below the surrounding terrain rim** (fill the bowl to the rim, no uphill overflow); water is **permanent** (real terrain change, no auto-cleanup); **skip protected regions**; **Nether caveat** — water evaporates there, so skip placement and note it.
 | T6 | Plugin wiring + `/tntlibrary` command (give/list/reload) + `PluginDescriptorTest` assertions | root + `…command` | T1–T5 | none |
 
 Dispatch order: T1‖T2 → T3‖T4 → T5 → T6. Each subagent creates only its own package + tests and does **not** touch `pom.xml`, `plugin.yml`, or `TntLibraryPlugin.java` (T6 wires everything).
