@@ -10,9 +10,8 @@
 package org.xpfarm.tntlibrary.core;
 
 import net.kyori.adventure.text.Component;
-import org.bukkit.Location;
-import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
+import org.xpfarm.tntlibrary.detonation.DetonationContext;
 
 /**
  * The contract every bomb in the library implements.
@@ -20,7 +19,7 @@ import org.bukkit.inventory.ItemStack;
  * <p>A {@code CustomTnt} is a lightweight definition, not an entity: its identity ({@link #id()}),
  * its recipe shape ({@link #recipeSpec()}) and its {@link #fuseTicks()} are pure, server-free data,
  * which is what lets {@link TntRegistry} be unit-tested. Only the two Bukkit-touching members —
- * {@link #createItem()} and {@link #detonate(Location, Entity)} — need a running server, and those
+ * {@link #createItem()} and {@link #detonate(DetonationContext)} — need a running server, and those
  * are verified at the runtime gate rather than in JUnit.
  */
 public interface CustomTnt {
@@ -56,22 +55,27 @@ public interface CustomTnt {
 
     /**
      * How long the fuse burns, in server ticks (20 ticks = 1 second), between priming and {@link
-     * #detonate(Location, Entity)}.
+     * #detonate(DetonationContext)}.
      */
     int fuseTicks();
 
     /**
      * The bomb's effect, fired when its fuse expires.
      *
-     * <p>This is the behaviour hook the detonation-services layer drives once the rig and phase
-     * runner exist; the richer detonation context (region-protection adapter, phase scheduler) is
-     * threaded in by a later task. The default is a deliberate no-op so a bomb can be registered and
-     * crafted before its effect is written.
+     * <p>The {@link DetonationContext} carries every service the effect needs — where and who primed
+     * it, the owning {@link org.bukkit.plugin.Plugin} for scheduling, this bomb's tuned {@link
+     * org.xpfarm.tntlibrary.config.BombSettings}, and the {@link
+     * org.xpfarm.tntlibrary.protect.ProtectionService} it must respect before changing the world.
+     * Passing a context rather than a fixed {@code (Location, Entity)} pair lets new services be added
+     * without changing this signature again. It is built and invoked by {@code
+     * org.xpfarm.tntlibrary.detonation.Detonator} from the rig's fuse-elapsed callback.
      *
-     * @param center the block location the bomb detonates at
-     * @param primer the entity that primed it (may be {@code null} for non-player ignition)
+     * <p>The default is a deliberate no-op so a bomb can be registered and crafted before its effect
+     * is written.
+     *
+     * @param ctx the detonation services and location for this blast; never {@code null}
      */
-    default void detonate(Location center, Entity primer) {
-        // Default no-op: effect is supplied per-bomb; the detonation layer wires the context later.
+    default void detonate(DetonationContext ctx) {
+        // Default no-op: effect is supplied per-bomb; the detonation layer builds and passes the ctx.
     }
 }

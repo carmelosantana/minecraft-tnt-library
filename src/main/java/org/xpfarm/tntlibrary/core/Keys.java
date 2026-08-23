@@ -58,5 +58,15 @@ public final class Keys {
      */
     public static final NamespacedKey MARKER_ROLE = new NamespacedKey(NAMESPACE, "marker_role");
 
+    /**
+     * Marks the real {@link org.bukkit.entity.TNTPrimed} entity a bomb spawns to detonate, carrying
+     * the bomb's id as its value. The detonation layer's {@code EntityExplodeEvent} listener reads
+     * this back to recognise its own explosions (versus vanilla TNT) and to dispatch the right
+     * post-blast effect — e.g. the Water Bomb's crater fill. Distinct from {@link #TNT_ID} (which
+     * marks an inventory item) and {@link #RIG_BOMB_ID} (which marks a placed rig's display
+     * entities): this marks the transient primed-explosive entity for the single tick it lives.
+     */
+    public static final NamespacedKey DETONATION_ID = new NamespacedKey(NAMESPACE, "detonation_id");
+
     private Keys() {}
 }

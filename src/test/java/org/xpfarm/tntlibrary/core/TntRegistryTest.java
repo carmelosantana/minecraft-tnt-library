@@ -18,11 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Map;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
+import org.xpfarm.tntlibrary.detonation.DetonationContext;
 
 /**
  * Unit tests for {@link TntRegistry}'s id-to-definition lookup and duplicate handling.
@@ -69,8 +68,8 @@ final class TntRegistryTest {
         }
 
         @Override
-        public void detonate(Location center, Entity primer) {
-            // no-op
+        public void detonate(DetonationContext ctx) {
+            // no-op: the registry never detonates, and this double is server-free
         }
     }
 

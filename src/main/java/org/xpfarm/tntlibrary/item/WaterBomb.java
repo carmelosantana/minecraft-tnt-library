@@ -14,8 +14,11 @@ import java.util.Map;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.World;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -23,6 +26,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.xpfarm.tntlibrary.core.CustomTnt;
 import org.xpfarm.tntlibrary.core.Keys;
 import org.xpfarm.tntlibrary.core.RecipeSpec;
+import org.xpfarm.tntlibrary.detonation.DetonationContext;
 
 /**
  * The Water Bomb: a vanilla {@link Material#TNT} wearing a custom water-themed model, crafted from
@@ -133,5 +137,49 @@ public final class WaterBomb implements CustomTnt {
     @Override
     public int fuseTicks() {
         return fuseTicks;
+    }
+
+    /** Lowest explosion power the Water Bomb ever uses, so a misconfigured {@code radius} still pops. */
+    private static final float MIN_POWER = 1.0f;
+
+    /** Upper clamp on explosion power — keeps the blast modest even if {@code radius} is large. */
+    private static final float MAX_POWER = 8.0f;
+
+    /**
+     * Detonates the Water Bomb: spawn a real, tagged explosion whose crater is then flooded to the
+     * rim by {@link org.xpfarm.tntlibrary.detonation.DetonationListener}.
+     *
+     * <p>This method performs only step one — the blast. It spawns a genuine {@link TNTPrimed} at the
+     * detonation centre with a zero fuse (it explodes on the next tick) and tags it in its PDC with
+     * {@link Keys#DETONATION_ID} = {@link #ID}. Spawning a real entity is deliberate: WorldGuard and
+     * GriefPrevention filter its {@link org.bukkit.event.entity.EntityExplodeEvent} block list, so
+     * protected terrain is removed from the crater before this plugin ever sees it, and the listener
+     * that reads the tag both recognises the explosion as ours and knows to run the water fill. The
+     * crater capture, rim math, and permanent water placement all happen in that listener one tick
+     * later; nothing further is scheduled here.
+     *
+     * <p>The explosion is not incendiary (a Water Bomb starts no fires) and its power is derived from
+     * the configured {@link org.xpfarm.tntlibrary.config.BombSettings#radius()}, clamped to
+     * [{@value #MIN_POWER}, {@value #MAX_POWER}] to stay modest. A null world (a detached center) is a
+     * no-op. This is server-dependent and verified at the runtime gate.
+     *
+     * @param ctx the detonation services and location; never {@code null}
+     */
+    @Override
+    public void detonate(DetonationContext ctx) {
+        World world = ctx.world();
+        if (world == null) {
+            return; // detached location; nothing to detonate against
+        }
+        Location center = ctx.center();
+        float power = Math.max(MIN_POWER, Math.min(MAX_POWER, ctx.settings().radius()));
+
+        world.spawn(center, TNTPrimed.class, tnt -> {
+            tnt.setYield(power);
+            tnt.setIsIncendiary(false);
+            tnt.setFuseTicks(0); // explode on the next tick, driving the EntityExplodeEvent
+            tnt.getPersistentDataContainer()
+                    .set(Keys.DETONATION_ID, PersistentDataType.STRING, ID);
+        });
     }
 }
