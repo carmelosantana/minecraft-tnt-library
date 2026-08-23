@@ -12,6 +12,7 @@ package org.xpfarm.tntlibrary;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.xpfarm.tntlibrary.block.BombFuse;
@@ -19,6 +20,8 @@ import org.xpfarm.tntlibrary.command.TntCommand;
 import org.xpfarm.tntlibrary.config.TntLibraryConfig;
 import org.xpfarm.tntlibrary.core.CustomTnt;
 import org.xpfarm.tntlibrary.core.TntRegistry;
+import org.xpfarm.tntlibrary.delivery.BedrockDetector;
+import org.xpfarm.tntlibrary.delivery.ResourcePackDeliveryListener;
 import org.xpfarm.tntlibrary.detonation.DetonationListener;
 import org.xpfarm.tntlibrary.detonation.Detonator;
 import org.xpfarm.tntlibrary.geyser.GeyserAssetInstaller;
@@ -61,6 +64,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private TntRegistry registry;
     private BombFuse bombFuse;
     private Detonator detonator;
+    private ResourcePackDeliveryListener packDeliveryListener;
 
     @Override
     public void onLoad() {
@@ -89,6 +93,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         pm.registerEvents(new PlacementListener(this), this);
         pm.registerEvents(new IgnitionListener(this), this);
         pm.registerEvents(new BombGuardListener(this), this);
+        registerDeliveryListener();
 
         TntCommand command = new TntCommand(this);
         PluginCommand pluginCommand = getCommand("tntlibrary");
@@ -135,6 +140,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         this.registry = new TntRegistry();
         registerEnabledBombs(config);
         this.detonator = new Detonator(this, config, protection);
+        registerDeliveryListener();
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
         }
@@ -161,6 +167,25 @@ public final class TntLibraryPlugin extends JavaPlugin {
         if (cfg.bomb(WaterBomb.ID).enabled()) {
             registry.register(new WaterBomb(cfg.bomb(WaterBomb.ID).fuseTicks()));
         }
+    }
+
+    /**
+     * (Re)builds the resource-pack delivery listener against the current {@link #config} and
+     * registers it, unregistering any previously-registered listener from this plugin first. A fresh
+     * listener is built each call, rather than mutated in place, because {@link
+     * ResourcePackDeliveryListener}'s config is a {@code final} field set at construction -- so a
+     * {@code /tntlibrary reload} that changes the pack URL/SHA-1 is picked up by rebuilding here.
+     *
+     * <p>{@link BedrockDetector#create(java.util.logging.Logger)} resolves Floodgate lazily on first
+     * use (see that class), so building it here does not require Floodgate to have enabled yet.
+     */
+    private void registerDeliveryListener() {
+        if (packDeliveryListener != null) {
+            HandlerList.unregisterAll(packDeliveryListener);
+        }
+        packDeliveryListener = new ResourcePackDeliveryListener(
+                config, BedrockDetector.create(getLogger()), getLogger());
+        getServer().getPluginManager().registerEvents(packDeliveryListener, this);
     }
 
     /** The live bomb registry; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */

@@ -124,7 +124,7 @@ final class TntLibraryConfigTest {
                   url: ''
                   sha1: ''
                   required: false
-                """), log[0]);
+                """), log[0], PackDefaults.empty());
 
         assertTrue(config.masterEnabled());
 
@@ -173,7 +173,7 @@ final class TntLibraryConfigTest {
         Logger[] log = new Logger[1];
         RecordingHandler handler = newLogger(log);
 
-        TntLibraryConfig config = TntLibraryConfig.from(section("{}"), log[0]);
+        TntLibraryConfig config = TntLibraryConfig.from(section("{}"), log[0], PackDefaults.empty());
 
         assertTrue(config.masterEnabled());
         for (BombType type : BombType.values()) {
@@ -375,7 +375,7 @@ final class TntLibraryConfigTest {
                 java.util.Map.of("waterbomb", new BombSettings(true, 4, 80, 0));
 
         TntLibraryConfig config = new TntLibraryConfig(
-                false, lying, true, ProtectionProvider.AUTO, "", "", false);
+                false, lying, true, ProtectionProvider.AUTO, "", "", false, "", false);
 
         assertFalse(config.bomb("waterbomb").enabled(),
                 "the canonical constructor must re-derive bomb enabled from the master switch");
