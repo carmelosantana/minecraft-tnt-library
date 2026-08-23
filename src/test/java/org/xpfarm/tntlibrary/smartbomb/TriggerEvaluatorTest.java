@@ -44,14 +44,17 @@ final class TriggerEvaluatorTest {
     }
 
     @Test
-    void proximityFiresWithinRadiusOnly() {
+    void proximityFiresWithinDetonateDistanceOnly() {
         SmartBombParams p = new SmartBombParams(4, 72000, null, true, 6);
-        // farther than radius: no fire
-        assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, 6.5)).detonate());
+        // detected but outside the inner detonation threshold: no fire (it only warns)
+        assertFalse(TriggerEvaluator.evaluate(
+                        p, new TriggerEvaluator.State(0, 0, 0, TriggerEvaluator.DETONATE_DISTANCE + 0.5))
+                .detonate());
         // null distance (nothing in range): no fire
         assertFalse(TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, null)).detonate());
-        // within radius: fire
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, 6.0));
+        // within the detonation threshold: fire
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(
+                p, new TriggerEvaluator.State(0, 0, 0, TriggerEvaluator.DETONATE_DISTANCE));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
     }
@@ -59,7 +62,7 @@ final class TriggerEvaluatorTest {
     @Test
     void proximityPreemptsBeforeDelayElapses() {
         SmartBombParams p = new SmartBombParams(4, 50, null, true, 6);
-        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(1, 0, 0, 3.0));
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(1, 0, 0, 1.5));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
     }
@@ -132,5 +135,70 @@ final class TriggerEvaluatorTest {
                 TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(4, 6000, 6000, null));
         assertTrue(d.detonate());
         assertEquals(TriggerEvaluator.Trigger.TIME, d.firedBy());
+    }
+
+    // --- I2 fix: detection/warning radius is distinct from the inner detonation threshold. ---
+
+    /**
+     * The I2 bug: with a large detection radius (16) the bomb used to detonate the first tick any entity
+     * entered {@code proximityRadius}, so the escalating warning never got successive ticks to ramp. An
+     * entity 10 blocks away is well inside the 16-block detection range but outside the 2.0-block
+     * detonation threshold, so it must NOT fire — it only warns. Before this fix (fire at {@code <=
+     * proximityRadius}) it WOULD have fired. This is the core regression guard.
+     */
+    @Test
+    void proximityDoesNotFireWhenEntityDetectedButOutsideDetonateDistance() {
+        SmartBombParams p = new SmartBombParams(4, 72000, null, true, 16);
+        TriggerEvaluator.Decision d =
+                TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, 10.0));
+        assertFalse(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.NONE, d.firedBy());
+    }
+
+    /** An entity exactly at the detonation threshold fires on proximity. */
+    @Test
+    void proximityFiresExactlyAtDetonateDistance() {
+        SmartBombParams p = new SmartBombParams(4, 72000, null, true, 16);
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(
+                p, new TriggerEvaluator.State(0, 0, 0, TriggerEvaluator.DETONATE_DISTANCE));
+        assertTrue(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
+    }
+
+    /** Just past the detonation threshold (2.01) does not fire on proximity. */
+    @Test
+    void proximityDoesNotFireJustPastDetonateDistance() {
+        SmartBombParams p = new SmartBombParams(4, 72000, null, true, 16);
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(
+                p, new TriggerEvaluator.State(0, 0, 0, TriggerEvaluator.DETONATE_DISTANCE + 0.01));
+        assertFalse(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.NONE, d.firedBy());
+    }
+
+    /** Well inside the detonation threshold fires on proximity. */
+    @Test
+    void proximityFiresWellInsideDetonateDistance() {
+        SmartBombParams p = new SmartBombParams(4, 72000, null, true, 16);
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, 0.5));
+        assertTrue(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
+    }
+
+    /** With proximity disabled, a close entity does not fire on proximity. */
+    @Test
+    void proximityDisabledDoesNotFireEvenWhenClose() {
+        SmartBombParams p = new SmartBombParams(4, 72000, null, false, 16);
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 0, 0, 1.0));
+        assertFalse(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.NONE, d.firedBy());
+    }
+
+    /** When proximity (within threshold) and time both fire on the same tick, proximity wins the label. */
+    @Test
+    void proximityWinsLabelWhenWithinDetonateDistanceAndTimeCoincide() {
+        SmartBombParams p = new SmartBombParams(4, 72000, 6000L, true, 16);
+        TriggerEvaluator.Decision d = TriggerEvaluator.evaluate(p, new TriggerEvaluator.State(0, 6000, 6000, 1.0));
+        assertTrue(d.detonate());
+        assertEquals(TriggerEvaluator.Trigger.PROXIMITY, d.firedBy());
     }
 }

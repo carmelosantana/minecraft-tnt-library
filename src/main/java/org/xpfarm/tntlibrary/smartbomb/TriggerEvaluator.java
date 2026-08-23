@@ -21,6 +21,12 @@ package org.xpfarm.tntlibrary.smartbomb;
  * {@code detonate} outcome does not depend on precedence. The whole rule lives in the single boolean
  * expression in {@link #evaluate} so it is trivial to adjust in one place if the contract changes.
  *
+ * <p><strong>Proximity has two distinct distances.</strong> {@code proximityRadius} is the
+ * <em>detection/warning</em> range: the watcher scans within it and {@link ProximityWarning} escalates
+ * the beep (pitch up, period down) as an entity closes across it. Detonation happens only when a
+ * detected entity crosses the fixed inner {@link #DETONATE_DISTANCE} threshold, so a larger detection
+ * radius buys a longer warning runway rather than an instant blast.
+ *
  * <p>Headless and side-effect free: no Bukkit, no clock, no randomness. The caller supplies the tick's
  * facts via {@link State} (with {@code worldTime} already normalized to {@code 0..23999}).
  */
@@ -28,9 +34,19 @@ public final class TriggerEvaluator {
 
     private TriggerEvaluator() {}
 
+    /**
+     * The inner "close enough" detonation distance in blocks. proximityRadius is the detection/warning
+     * range — the mine senses and beeps across it, escalating as an entity approaches (see
+     * ProximityWarning) — and detonates only when a detected entity is within this fixed threshold,
+     * giving a longer warning runway for larger detection radii. For proximityRadius &le; DETONATE_DISTANCE
+     * the two coincide (immediate). Kept a constant for now; promotable to a config key later if tuning
+     * is wanted.
+     */
+    public static final double DETONATE_DISTANCE = 2.0;
+
     /** Which trigger caused a detonation, or {@link #NONE} when the bomb stays armed. */
     public enum Trigger {
-        /** A living entity was within the proximity radius. */
+        /** A detected living entity closed to within {@link #DETONATE_DISTANCE}. */
         PROXIMITY,
         /**
          * The time trigger fires when the world clock reaches or crosses the set time (robust to the
@@ -68,7 +84,7 @@ public final class TriggerEvaluator {
      */
     public static Decision evaluate(SmartBombParams p, State s) {
         boolean proxFires =
-                p.proximity() && s.nearestDistance() != null && s.nearestDistance() <= p.proximityRadius();
+                p.proximity() && s.nearestDistance() != null && s.nearestDistance() <= DETONATE_DISTANCE;
         boolean timeFires = false;
         if (p.timeTrigger() != null) {
             long target = p.timeTrigger();               // already normalized 0..23999 by the record
