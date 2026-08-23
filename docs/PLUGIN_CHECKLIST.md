@@ -33,9 +33,9 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ### Framework architecture
 
-- **`CustomTnt` definition** (interface/abstract base) + **`TntRegistry`** (id → `Supplier<CustomTnt>` map, unit-testable without a server, mirrors redstone-stuff `ItemRegistry`). Each definition carries: id, display name, `ItemStack` builder (base `Material.TNT` + custom `item_model` + PDC id), `ShapedRecipe` (shape-as-data for JUnit), placed-block appearance (BlockDisplay model + per-face textures), fuse ticks, config/permission keys, and a `detonate(Location center, Entity primer)` hook.
+- **`CustomTnt` definition** (interface/abstract base) + **`TntRegistry`** (id → `Supplier<CustomTnt>` map, unit-testable without a server, mirrors redstone-stuff `ItemRegistry`). Each definition carries: id, display name, `ItemStack` builder (base `Material.TNT` + custom `item_model` + PDC id), `ShapedRecipe` (shape-as-data for JUnit), fuse ticks, config/permission keys, and a `detonate(DetonationContext)` hook.
 - **Item identity:** PDC key `tnt_library:tnt_id` (STRING). Recipes registered with `removeRecipe(key,true)` then `addRecipe(recipe,true)` (resend on reload).
-- **Placed block = display-entity rig:** placing the item spawns a `BlockDisplay` (custom-textured cube, distinct top/side/bottom per bomb) + an `Interaction` entity, both PDC-tagged. Ignition sources (flint & steel, redstone current, fire/lava spread) convert the rig to a primed state that runs the bomb's `detonate` after its fuse. Geyser-safe; no client-side block model required.
+- **Placed block = real vanilla blockstate + Geyser Custom Blocks** (re-architected 2026-08-23; see `docs/dev/PHASE1B.md`). Placing the item rewrites the block to a claimed `note_block` state (`instrument=pling`, distinct `note` per bomb, `powered=false`; physics-locked so the instrument can't re-derive). A Java resource pack reskins that state to the bomb's `cube_bottom_top` model; a Geyser `custom_mappings` override maps the same state to a Bedrock custom block (`unit_cube`), so the cube renders as a **true 3D block on both editions** (display entities are invisible to Bedrock — the reason for this change). `org.xpfarm.tntlibrary.block.BombBlocks` is the single source of truth for the state↔id table. Being a real block, it gains full real-TNT ignition parity (flint & steel, fire/lava, redstone). Geyser assets are written into Geyser's folder in `onLoad` (`loadbefore: [Geyser-Spigot]`); Geyser requires `gameplay.enable-custom-content: true` (operator-set).
 - **Shared detonation services** provided to every bomb: radius entity-gathering, region-protection check (soft-depend), explosion helper (`World#createExplosion`), particle/sound helpers, and a scheduler-driven **phase runner** (one `runTaskTimer` + tick counter; interval-gated effects via `tick % n`, per tuesday-twister).
 
 ### Commands
@@ -49,14 +49,15 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ### Events (Paper/Bukkit)
 
-- `BlockPlaceEvent` — intercept placing a bomb item → spawn the display-entity rig instead of a vanilla TNT block.
-- `PlayerInteractEvent` — flint & steel on a rig → ignite; also Smart Bomb programming interactions.
-- `BlockIgniteEvent` / `BlockRedstoneEvent` — redstone/fire ignition of a placed rig.
+- `BlockPlaceEvent` — placing a bomb item rewrites the block to the claimed `note_block` state (not a vanilla TNT block).
+- `PlayerInteractEvent` — flint & steel on a bomb block → ignite; any other interaction is swallowed so the note never cycles; also Smart Bomb programming interactions.
+- `BlockIgniteEvent` / `BlockRedstoneEvent` — fire/lava/redstone ignition of a placed bomb block (real-TNT parity).
+- `BlockPhysicsEvent` / `NotePlayEvent` / `BlockBreakEvent` — keep the bomb block locked (instrument can't re-derive), silent, and dropping the bomb item on break.
 - `EntityExplodeEvent` / `BlockExplodeEvent` — attribute craters to a bomb via PDC; enforce region protection; drive Water Bomb crater-fill and White Out non-destruction.
 - `PrepareItemCraftEvent` / recipe events — gate crafting behind per-bomb permission + config toggle.
 - `EntityDamageEvent` (cause `FALL`) — G-Bomb fall-damage accounting; White Out impact damage.
 - `PlayerMoveEvent` or scheduled proximity scan — Smart Bomb proximity sensing + warning sound.
-- `PlayerQuitEvent` / chunk-unload — clean up rigs, boss bars, and in-flight phase tasks.
+- `PlayerQuitEvent` / chunk-unload — clean up boss bars and in-flight phase tasks (placed bombs are real blocks and persist; no rig cleanup needed).
 
 ### Permissions
 
@@ -109,7 +110,7 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 - **G-Bomb on Bedrock:** the float/launch visuals will be weak or absent (Geyser doesn't translate `setGravity(false)`; player velocity is client-authoritative). The kill still lands via the server-side `DamageSource[FALL]` finisher, but the *experience* differs from Java. Accepted and documented.
 - **White Out fidelity:** "suck in everything not stone or behind a door" needs a concrete spare-list ruleset; exact block/entity classification (what counts as "loose", how doors shelter contents) is an **open engineering question** to settle at gate 4, not assumed now.
 - **Smart Bomb programming UI:** command vs. sign/anvil vs. Geyser form is an **open question** (see Commands) — Bedrock form support must be verified before committing.
-- **Placed-block appearance** relies on display entities; extremely high bomb counts could add entity load. Phase-1 scope keeps counts modest; revisit if it matters.
+- **Placed-block appearance** is a real vanilla `note_block` reskinned via a Java resource pack + Geyser Custom Blocks (re-architected 2026-08-23; superseded the display-entity rig, which was invisible on Bedrock). Two consequences: (a) Geyser custom-**block** components are upstream-unstable (Geyser wiki) — re-test the cubes after any Geyser/Bedrock version bump; (b) **identity is the blockstate** — a player who hand-tunes a real note block to `instrument=pling,note=19,powered=false` on a pling-supporting block would be treated as a bomb block. Very low probability; hardening (chunk-PDC location tracking) deferred.
 - **Twins line-explosion shape** and **Water Bomb crater-cavity detection** algorithms are specified by intent, not yet by exact geometry — to be pinned at gate 4.
 - No gates are intentionally withheld (active plugin, full pipeline). Complex bombs are **phased**, not withheld: Phase 1 framework + Water Bomb; Phase 2 Smart Bomb + Twins; Phase 3 F-Bomb + G-Bomb; Phase 4 White Out.
 
@@ -135,8 +136,8 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 ## 4. Compatibility
 
 - [x] Java 25/Paper 26.1.2 build 74 compile succeeds and `plugin.yml` uses `api-version: '26.1'`, matching the API compiled against. → `mvn clean verify` green (Java 25, paper-api 26.1.2.build.74); embedded `plugin.yml` `api-version: '26.1'`; runtime Paper 26.1.2 loaded the plugin green.
-- [x] Hard dependencies, soft dependencies, optional APIs, and load ordering were reviewed and declared. → only compile dep is `paper-api` (provided). `softdepend: [WorldGuard, GriefPrevention]`. Geyser/Floodgate not declared as depend/softdepend by design (asset install belongs in `onLoad`, wrong phase for a depend); Phase-1 Geyser/Floodgate use is reflective/none. No hard deps.
-- [x] Geyser/Floodgate/ViaVersion review covers Bedrock-safe input, UI, inventory, identity, and protocol behavior. → placed bomb is a **display-entity rig** (renders on Bedrock via Geyser with no client pack); all effects server-authoritative (explosion/velocity/block changes), feedback via action-bar/chat `Component` + sounds (no Java-only chat-input, no custom attributes). Runtime: floodgate, Geyser-Spigot, ViaVersion all booted **green** alongside TNTLibrary on one stack. **Client-render of the rig/item on a real Bedrock client is not headlessly verifiable — deferred to the gate-12 play-test (see §7 note).**
+- [x] Hard dependencies, soft dependencies, optional APIs, and load ordering were reviewed and declared. → only compile dep is `paper-api` (provided). `softdepend: [WorldGuard, GriefPrevention]`; `loadbefore: [Geyser-Spigot]` so the `onLoad` Geyser-asset install lands before Geyser reads its mappings. Geyser/Floodgate are **not** a hard/soft *depend* by design — the plugin enables normally on a Java-only server (installer no-ops when no Geyser is detected). No hard deps.
+- [x] Geyser/Floodgate/ViaVersion review covers Bedrock-safe input, UI, inventory, identity, and protocol behavior. → placed bomb is a **real vanilla `note_block` reskinned via a Java resource pack + Geyser Custom Blocks** (`unit_cube`), so it renders as a true 3D cube on **both** editions (re-architected from the Bedrock-invisible display-entity rig). All effects server-authoritative (explosion/block changes); feedback via action-bar `Component` + sounds + particles (all Geyser-translated; no Java-only chat-input, no custom attributes). Runtime: floodgate, Geyser-Spigot, ViaVersion booted **green** alongside TNTLibrary; the `onLoad` installer wrote the mapping + Bedrock pack into Geyser's folder and **Geyser parsed it with `enable-custom-content: true` and registered custom blocks with no error**. **Per-bomb cube render on a real Bedrock/Java client is not headlessly verifiable — deferred to the gate-12 play-test (see §7).**
 
 ## 5. External services
 
@@ -146,10 +147,10 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ## 6. Tests and build
 
-- [x] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable. → **86 tests** across core (registry/keys/recipe-spec), config (never-throws parsing, bad-value defaults, provider), item (recipe shape/id), rig (state/geometry/handle), detonation (crater/rim math), command (subcommand routing, amount parsing, permission constants).
+- [x] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable. → **81 tests** across core (registry/keys/recipe-spec), config (never-throws parsing, bad-value defaults, provider), item (recipe shape/id), **block (the note_block state-claim table: completeness vs. `BombType`, distinct notes, round-trip, canonical key)**, detonation (crater/rim math), command (subcommand routing, amount parsing, permission constants). (Down from 86: the display-entity rig's pure tests were removed with the rig; the block state-claim test replaces them.)
 - [x] `PluginDescriptorTest` parses `plugin.yml` and `config.yml` with SnakeYAML and asserts `name`, `main`, a `String`-typed `api-version`, a fully-substituted `version`, every command the code looks up, every permission the code checks, and the declared soft dependencies. → present; asserts `tntlibrary` command and `tntlibrary.admin` / `.command.give` / `.command.reload` / `.use.waterbomb` (the nodes the command + listeners check) and `WorldGuard` softdepend.
-- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds. → BUILD SUCCESS, 86 tests, 0 failures.
-- [x] The shaded releasable JAR and embedded `plugin.yml` were inspected; `original-*` JARs are excluded. → `target/tnt-library-0.1.0.jar`; embedded `plugin.yml` `version: '0.1.0'` (substituted), correct main/api-version/commands/permissions; **0** `org/bukkit` or `io/papermc` classes bundled (provided scope correct); `original-tnt-library-0.1.0.jar` is the pre-shade intermediate, not a release asset.
+- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds. → BUILD SUCCESS, 81 tests, 0 failures.
+- [x] The shaded releasable JAR and embedded `plugin.yml` were inspected; `original-*` JARs are excluded. → `target/tnt-library-0.1.0.jar`; embedded `plugin.yml` `version: '0.1.0'` (substituted), correct main/api-version/commands/permissions/`loadbefore`; **0** `org/bukkit` or `io/papermc` classes bundled (provided scope correct); the Java resource pack (`pack/**`) and Geyser assets (`geyser/**`, unfiltered so PNGs/JSON ship byte-for-byte) are bundled; 33 plugin classes, rig package gone; `original-tnt-library-0.1.0.jar` is the pre-shade intermediate, not a release asset.
 
 ## 7. Matrix
 
@@ -159,14 +160,16 @@ Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via 
 
 - `/tntlibrary list` → `Registered bombs (1): waterbomb [enabled]`.
 - `/tntlibrary reload` → `reloaded; 1 bomb(s) registered [waterbomb]` (config re-read path works).
-- `/tntlibrary give waterbomb` (no player) → graceful console error; `give waterbomb Ghost 5` (offline) → graceful "player not found" error.
+- `/tntlibrary give waterbomb` (no player) → graceful console error.
+- **`onLoad` Geyser installer:** logged `Installed/updated 6 Geyser custom-block asset file(s) in Geyser-Spigot`; verified the mapping + Bedrock pack (6 files) landed at `/minecraft/plugins/Geyser-Spigot/{custom_mappings,packs/tnt_library}`; Geyser (with `enable-custom-content: true`) parsed the mapping and registered custom blocks with **no error** about our file.
 - Log scan: **no exceptions, no SEVERE, no leaked secrets**; clean `Loading`/`Enabling`/`enabled — 1 bomb(s) registered` lines. Torn down with `down` (slot released, no leak).
 
-**Behaviors NOT reachable headlessly — gate-12 play-test obligation (real Java + Bedrock client on `play.xpfarm.org`):**
-- Crafting the Water Bomb (TNT + 4 water buckets) actually yields the item.
-- Placing the item spawns the display-entity rig (no vanilla TNT) and consumes one item; the rig renders on Java **and** Bedrock.
-- Flint & steel right-click primes → fuse → explosion → **crater floods with permanent water sources to the rim** (and Nether skips the fill); WG/GriefPrevention actually spare protected regions.
-- Custom item/rig **texture rendering** (placeholder `Material.TNT` cube this phase; real art lands with the asset track).
+**Behaviors NOT reachable headlessly — gate-12 play-test obligation (real Java + Bedrock client on `play.xpfarm.org`, with Geyser `enable-custom-content: true`):**
+- Crafting the Water Bomb (TNT + 4 water buckets) actually yields the item, and the item shows as the **3D cube in inventory** (item_model → block model).
+- Placing the item yields the claimed `note_block` state (no vanilla TNT) and the cube **renders on Java AND Bedrock** (the whole reason for the Custom Blocks re-architecture — must confirm the Bedrock cube actually draws).
+- **Real-TNT ignition parity:** flint & steel, fire/lava spread, and redstone each light the fuse → smoke+primed cue → explosion → **crater floods with permanent water sources to the rim** (Nether skips the fill); WG/GriefPrevention spare protected regions.
+- **Physics lock** holds (the note-block instrument never re-derives from the block below), the block is **silent**, and **breaking it returns the Water Bomb item**.
+- Edge case: a hand-tuned real note block at `instrument=pling,note=19,powered=false` would be treated as a bomb (documented low-probability limitation) — spot-check acceptability.
 
 ### 7b — full-roster matrix — NOT RUN (out-of-band, not required for this release)
 

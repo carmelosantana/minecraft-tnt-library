@@ -6,6 +6,7 @@ author: Carmelo Santana
 website: https://xpfarm.org
 description: A custom-TNT framework and a set of creative, premium explosives with matching textures on Java and Bedrock clients
 softdepend: [WorldGuard, GriefPrevention]
+loadbefore: [Geyser-Spigot]
 
 commands:
   tntlibrary:

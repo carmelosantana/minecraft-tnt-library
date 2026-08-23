@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "tnt_library:block/waterbomb_top",
+    "side": "tnt_library:block/waterbomb_side",
+    "bottom": "tnt_library:block/waterbomb_bottom",
+    "particle": "tnt_library:block/waterbomb_side"
+  }
+}

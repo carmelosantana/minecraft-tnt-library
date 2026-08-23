@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "blocks": {
+    "minecraft:note_block": {
+      "name": "tnt_library:waterbomb",
+      "only_override_states": true,
+      "state_overrides": {
+        "instrument=pling,note=19,powered=false": {
+          "unit_cube": true,
+          "destructible_by_mining": 1,
+          "material_instances": {
+            "up": {
+              "texture": "tnt_library_waterbomb_top",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "down": {
+              "texture": "tnt_library_waterbomb_bottom",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "*": {
+              "texture": "tnt_library_waterbomb_side",
+              "render_method": "opaque",
+              "face_dimming": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

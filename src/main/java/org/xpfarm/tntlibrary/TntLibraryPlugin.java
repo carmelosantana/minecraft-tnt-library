@@ -14,19 +14,21 @@ import java.util.Set;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.xpfarm.tntlibrary.block.BombFuse;
 import org.xpfarm.tntlibrary.command.TntCommand;
 import org.xpfarm.tntlibrary.config.TntLibraryConfig;
 import org.xpfarm.tntlibrary.core.CustomTnt;
 import org.xpfarm.tntlibrary.core.TntRegistry;
 import org.xpfarm.tntlibrary.detonation.DetonationListener;
 import org.xpfarm.tntlibrary.detonation.Detonator;
+import org.xpfarm.tntlibrary.geyser.GeyserAssetInstaller;
 import org.xpfarm.tntlibrary.item.BombRecipes;
 import org.xpfarm.tntlibrary.item.WaterBomb;
+import org.xpfarm.tntlibrary.listener.BombGuardListener;
 import org.xpfarm.tntlibrary.listener.IgnitionListener;
 import org.xpfarm.tntlibrary.listener.PlacementListener;
 import org.xpfarm.tntlibrary.protect.AllowAllProtection;
 import org.xpfarm.tntlibrary.protect.ProtectionService;
-import org.xpfarm.tntlibrary.rig.TntRig;
 
 /**
  * Plugin bootstrap for TNT Library: the Phase-1 wiring that connects the already-built layers so a
@@ -35,31 +37,35 @@ import org.xpfarm.tntlibrary.rig.TntRig;
  * <h2>What is wired here</h2>
  *
  * <p>{@link #onEnable()} builds the runtime graph once — config snapshot, {@link ProtectionService},
- * {@link TntRegistry} (only bombs whose config says {@code enabled}), {@link TntRig}, {@link
- * Detonator} — then registers the crafting recipes and the three listeners ({@link
- * DetonationListener}, {@link PlacementListener}, {@link IgnitionListener}) and the {@code
- * /tntlibrary} command. The mutable services are exposed through package-visible getters so the
- * listeners and command always read the <em>current</em> registry/detonator, which is what lets
- * {@link #reloadPlugin()} swap them without re-registering anything.
+ * {@link TntRegistry} (only bombs whose config says {@code enabled}), {@link BombFuse}, {@link
+ * Detonator} — then registers the crafting recipes and the four listeners ({@link
+ * DetonationListener}, {@link PlacementListener}, {@link IgnitionListener}, {@link BombGuardListener})
+ * and the {@code /tntlibrary} command. The mutable services are exposed through package-visible
+ * getters so the listeners and command always read the <em>current</em> registry/detonator, which is
+ * what lets {@link #reloadPlugin()} swap them without re-registering anything.
+ *
+ * <p>{@link #onLoad()} runs first, before Geyser initialises, to write the Geyser Custom Blocks assets
+ * so a placed bomb renders as a true cube on Bedrock as well as Java.
  *
  * <h2>Phase-1 scope</h2>
  *
  * <p>Only the Water Bomb has a {@link CustomTnt} implementation this phase, so it is the only bomb
- * ever registered even though the config and permissions enumerate all six. A placed bomb is a
- * display-entity rig, not a real ignitable block, so <b>only flint &amp; steel right-click ignition
- * is supported</b> — redstone/fire ignition is a documented Phase-1 limitation, not wired here.
+ * ever registered even though the config and permissions enumerate all six. A placed bomb is a real
+ * {@code note_block} in a claimed state (see {@code org.xpfarm.tntlibrary.block.BombBlocks}), so it
+ * ignites with full real-TNT parity — flint &amp; steel, fire/lava, and redstone.
  */
 public final class TntLibraryPlugin extends JavaPlugin {
 
     private TntLibraryConfig config;
     private ProtectionService protection;
     private TntRegistry registry;
-    private TntRig tntRig;
+    private BombFuse bombFuse;
     private Detonator detonator;
 
     @Override
     public void onLoad() {
-        // Reserved: Bedrock/Geyser asset install runs here (before any plugin's onEnable). Dev gate.
+        // Runs before Geyser (via loadbefore) so the custom-block assets exist when Geyser reads them.
+        new GeyserAssetInstaller(getLogger(), getFile(), getDataFolder().getParentFile()).install();
     }
 
     @Override
@@ -71,9 +77,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         this.registry = new TntRegistry();
         registerEnabledBombs(config);
 
-        this.tntRig = new TntRig(this);
-        int orphans = tntRig.cleanupOrphans();
-
+        this.bombFuse = new BombFuse(this);
         this.detonator = new Detonator(this, config, protection);
 
         for (CustomTnt bomb : registry.all()) {
@@ -84,6 +88,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         pm.registerEvents(new DetonationListener(this, protection), this);
         pm.registerEvents(new PlacementListener(this), this);
         pm.registerEvents(new IgnitionListener(this), this);
+        pm.registerEvents(new BombGuardListener(this), this);
 
         TntCommand command = new TntCommand(this);
         PluginCommand pluginCommand = getCommand("tntlibrary");
@@ -96,13 +101,12 @@ public final class TntLibraryPlugin extends JavaPlugin {
         }
 
         getLogger().info("TNTLibrary enabled — " + registry.size() + " bomb(s) registered"
-                + (registry.size() > 0 ? " " + registry.ids() : "")
-                + (orphans > 0 ? "; cleaned " + orphans + " orphaned rig entity(ies)" : "") + ".");
+                + (registry.size() > 0 ? " " + registry.ids() : "") + ".");
     }
 
     @Override
     public void onDisable() {
-        // Placed rigs are intentionally left in the world; they are swept as orphans on next enable.
+        // Placed bombs are real blocks and stay in the world across a disable — nothing to sweep.
         // Bukkit cancels this plugin's scheduler tasks (including live fuses) and unregisters its
         // listeners automatically on disable, so only the recipes need explicit teardown.
         if (registry != null) {
@@ -164,9 +168,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
         return registry;
     }
 
-    /** The shared placement rig service; stable across a reload. */
-    public TntRig tntRig() {
-        return tntRig;
+    /** The shared fuse service that burns a lit bomb block down to detonation; stable across a reload. */
+    public BombFuse bombFuse() {
+        return bombFuse;
     }
 
     /** The live detonation entry point; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */

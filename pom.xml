@@ -98,21 +98,21 @@
         </plugins>
         <resources>
             <!--
-                Two resource blocks, and the split is load-bearing once art lands.
+                Two resource blocks, and the split is load-bearing.
 
                 plugin.yml and config.yml are filtered so `${project.version}` resolves. The Java
-                resource-pack (pack/**) and Bedrock-pack (bedrock/**) sources are NOT filtered:
-                they will include PNG textures, and Maven resource filtering rewrites files as text
-                — a filtered PNG is a corrupted PNG that only surfaces as a missing texture on a
-                real client. The pack/ and bedrock/ trees do not exist yet (added at the dev gate);
-                the excludes are harmless until then.
+                resource pack (pack/**) and the Geyser assets (geyser/**, which hold the Bedrock
+                resource pack and the custom_mappings JSON) are NOT filtered: they include PNG
+                textures, and Maven resource filtering rewrites files as text — a filtered PNG is a
+                corrupted PNG that only surfaces as a missing texture on a real client. The JSON in
+                these trees must also ship byte-for-byte, so they stay out of the filtered block too.
             -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <excludes>
                     <exclude>pack/**</exclude>
-                    <exclude>bedrock/**</exclude>
+                    <exclude>geyser/**</exclude>
                 </excludes>
             </resource>
             <resource>
@@ -120,7 +120,7 @@
                 <filtering>false</filtering>
                 <includes>
                     <include>pack/**</include>
-                    <include>bedrock/**</include>
+                    <include>geyser/**</include>
                 </includes>
             </resource>
         </resources>

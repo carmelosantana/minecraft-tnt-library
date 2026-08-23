@@ -28,16 +28,14 @@ final class KeysTest {
     @Test
     void everyKeyUsesTheTntLibraryNamespace() {
         assertEquals("tnt_library", Keys.TNT_ID.getNamespace());
-        assertEquals("tnt_library", Keys.RIG_BOMB_ID.getNamespace());
-        assertEquals("tnt_library", Keys.RIG_STATE.getNamespace());
         assertEquals("tnt_library", Keys.MARKER_ROLE.getNamespace());
+        assertEquals("tnt_library", Keys.DETONATION_ID.getNamespace());
     }
 
     @Test
     void everyKeyHasItsExpectedKeyValue() {
         assertEquals("tnt_id", Keys.TNT_ID.getKey());
-        assertEquals("rig_bomb_id", Keys.RIG_BOMB_ID.getKey());
-        assertEquals("rig_state", Keys.RIG_STATE.getKey());
         assertEquals("marker_role", Keys.MARKER_ROLE.getKey());
+        assertEquals("detonation_id", Keys.DETONATION_ID.getKey());
     }
 }

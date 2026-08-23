@@ -33,28 +33,18 @@ public final class Keys {
     public static final String NAMESPACE = "tnt_library";
 
     /**
-     * Marks a bomb <em>item</em> (or a placed rig) with its stable string bomb id, e.g. {@code
-     * waterbomb}. This is the identity read back to decide what a stack or rig actually is —
-     * display name and lore are forgeable and never used for identity.
+     * Marks a bomb <em>item</em> with its stable string bomb id, e.g. {@code waterbomb}. This is the
+     * identity read back to decide what a stack actually is — display name and lore are forgeable and
+     * never used for identity. A <em>placed</em> bomb is identified differently: it is a real vanilla
+     * {@code note_block} in a claimed blockstate (see {@code org.xpfarm.tntlibrary.block.BombBlocks}),
+     * so no PDC marker is involved once it is in the world.
      */
     public static final NamespacedKey TNT_ID = new NamespacedKey(NAMESPACE, "tnt_id");
 
     /**
-     * Reserved for the placement rig: the bomb id stamped onto the display-entity rig so a placed
-     * bomb can be resolved back to its {@link CustomTnt} definition when a player interacts with it.
-     */
-    public static final NamespacedKey RIG_BOMB_ID = new NamespacedKey(NAMESPACE, "rig_bomb_id");
-
-    /**
-     * Reserved for the placement rig: the rig's lifecycle state (placed vs primed). Stored on the
-     * rig's marker entity so the detonation layer can tell an inert placed bomb from a primed,
-     * fuse-running one.
-     */
-    public static final NamespacedKey RIG_STATE = new NamespacedKey(NAMESPACE, "rig_state");
-
-    /**
      * Reserved for the future Twins bomb: the role a marker entity plays within a multi-entity
-     * rig (e.g. which twin it is). Declared now so the rig/detonation layers share one key.
+     * detonation (e.g. which twin it is). Declared now so the block and detonation layers share one
+     * key when the Twins arrive.
      */
     public static final NamespacedKey MARKER_ROLE = new NamespacedKey(NAMESPACE, "marker_role");
 
@@ -63,8 +53,8 @@ public final class Keys {
      * the bomb's id as its value. The detonation layer's {@code EntityExplodeEvent} listener reads
      * this back to recognise its own explosions (versus vanilla TNT) and to dispatch the right
      * post-blast effect — e.g. the Water Bomb's crater fill. Distinct from {@link #TNT_ID} (which
-     * marks an inventory item) and {@link #RIG_BOMB_ID} (which marks a placed rig's display
-     * entities): this marks the transient primed-explosive entity for the single tick it lives.
+     * marks an inventory item): this marks the transient primed-explosive entity for the single tick
+     * it lives.
      */
     public static final NamespacedKey DETONATION_ID = new NamespacedKey(NAMESPACE, "detonation_id");
 

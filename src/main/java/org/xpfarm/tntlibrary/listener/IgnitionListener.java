@@ -16,49 +16,64 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.entity.Entity;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.xpfarm.tntlibrary.TntLibraryPlugin;
+import org.xpfarm.tntlibrary.block.BombBlocks;
 import org.xpfarm.tntlibrary.command.Permissions;
 import org.xpfarm.tntlibrary.core.CustomTnt;
-import org.xpfarm.tntlibrary.rig.RigHandle;
-import org.xpfarm.tntlibrary.rig.RigState;
-import org.xpfarm.tntlibrary.rig.TntRig;
 
 /**
- * Ignites a placed bomb rig when a player right-clicks it with flint &amp; steel.
+ * Ignites a placed bomb block with real-TNT parity: flint &amp; steel (right-click or dispenser),
+ * fire/lava spread, and redstone current all light the fuse — the same triggers that prime vanilla
+ * TNT. Because a bomb is now a real block, none of the Phase-1 "flint &amp; steel only" limitation
+ * remains.
  *
- * <p>The rig's {@code Interaction} entity is responsive, so right-clicking it fires {@link
- * PlayerInteractEntityEvent}. When the clicked entity is a tagged, still-{@link RigState#PLACED} rig
- * and the used hand holds {@link Material#FLINT_AND_STEEL}, this primes the rig with the bomb's fuse:
- * the {@link TntRig} runs the fuse and, when it elapses, the callback detonates the bomb and removes
- * the rig. Priming flips the rig's persisted state to {@link RigState#PRIMED} synchronously, which
- * naturally deduplicates the second (off-hand) interaction event of the same click.
+ * <h2>The three paths</h2>
  *
- * <h2>Phase-1 limitation — flint &amp; steel only</h2>
+ * <ul>
+ *   <li>{@link PlayerInteractEvent} — right-clicking a bomb block with flint &amp; steel lights it
+ *       (permission-checked, tool damaged, event cancelled so no fire is placed and the note is not
+ *       cycled). Right-clicking it with anything else is cancelled too, so the vanilla note never
+ *       changes pitch.</li>
+ *   <li>{@link BlockIgniteEvent} — when fire, lava, a dispensed flint &amp; steel, or an explosion
+ *       ignites a cell, any bomb block among that cell and its neighbours is lit (environmental, no
+ *       permission gate — matches fire priming vanilla TNT).</li>
+ *   <li>{@link BlockRedstoneEvent} — a bomb block that becomes powered is lit, like a redstone-fed
+ *       vanilla TNT.</li>
+ * </ul>
  *
- * <p>A placed bomb is a display-entity rig, not a real ignitable block, so redstone current and
- * spreading fire cannot ignite it this phase. Only this right-click path exists; that is deliberate,
- * not an omission.
+ * <p>The fuse itself ({@link org.xpfarm.tntlibrary.block.BombFuse}) refuses to double-light a block,
+ * so overlapping triggers are harmless.
  *
  * <h2>Bedrock safety</h2>
  *
- * <p>Right-clicking an {@code Interaction} entity, the action-bar feedback, and the sounds all work
- * identically for Bedrock players through Geyser. Nothing here uses a Java-only client feature.
+ * <p>Right-clicking a block, the action-bar feedback, and the sounds all work identically for Bedrock
+ * players through Geyser.
  *
  * <h2>Runtime-only</h2>
  *
- * <p>Everything here needs a live server (events, entity tags, scheduling), so it is verified at the
+ * <p>Everything here needs a live server (events, block data, scheduling), so it is verified at the
  * runtime gate rather than in JUnit.
  */
 public final class IgnitionListener implements Listener {
+
+    private static final BlockFace[] SELF_AND_NEIGHBOURS = {
+            BlockFace.SELF, BlockFace.UP, BlockFace.DOWN,
+            BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST,
+    };
 
     private final TntLibraryPlugin plugin;
 
@@ -66,57 +81,89 @@ public final class IgnitionListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onInteract(PlayerInteractEntityEvent event) {
-        TntRig tntRig = plugin.tntRig();
-        Entity clicked = event.getRightClicked();
-
-        Optional<String> bombId = tntRig.bombIdOf(clicked);
-        if (bombId.isEmpty()) {
-            return; // not a rig entity
+    /** Flint &amp; steel lights a bomb block; any other right-click on it is swallowed (no note cycle). */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) {
+            return;
         }
-        String id = bombId.get();
-        Player player = event.getPlayer();
+        Block block = event.getClickedBlock();
+        Optional<String> bombId = BombBlocks.bombIdOf(block);
+        if (bombId.isEmpty()) {
+            return;
+        }
+        // From here the block is a bomb: never let a vanilla note interaction run.
+        event.setCancelled(true);
 
+        Player player = event.getPlayer();
         ItemStack used = handItem(player, event.getHand());
         if (used == null || used.getType() != Material.FLINT_AND_STEEL) {
-            return; // wrong tool in this hand — let the other hand's event (if any) decide
+            return; // suppressed the note cycle; nothing else to do for this hand
         }
 
-        Optional<RigState> state = tntRig.stateOf(clicked);
-        if (state.isEmpty() || state.get() != RigState.PLACED) {
-            return; // already primed (or unknown state) — nothing to do
+        Optional<CustomTnt> bomb = plugin.registry().get(bombId.get());
+        if (bomb.isEmpty()) {
+            return;
         }
-
-        if (!player.hasPermission(Permissions.use(id))) {
-            event.setCancelled(true);
+        if (!player.hasPermission(Permissions.use(bombId.get()))) {
             player.sendActionBar(Component.text("You don't have permission to ignite that bomb.",
                     NamedTextColor.RED));
             return;
         }
-
-        Optional<RigHandle> rig = tntRig.findRigAt(clicked.getLocation());
-        Optional<CustomTnt> bomb = plugin.registry().get(id);
-        if (rig.isEmpty() || bomb.isEmpty()) {
-            return; // rig or definition vanished between click and resolve
+        if (ignite(block, bomb.get(), player)) {
+            damageFlintAndSteel(player, event.getHand(), used);
+            block.getWorld().playSound(block.getLocation().toCenterLocation(),
+                    Sound.ITEM_FLINTANDSTEEL_USE, 1.0f, 1.0f);
+            player.sendActionBar(Component.text("Fuse lit!", NamedTextColor.GOLD));
         }
+    }
 
-        // Consume the interaction so no vanilla use-entity behaviour also fires.
-        event.setCancelled(true);
+    /** Fire, lava, dispensed flint &amp; steel, or an explosion lights any adjacent bomb block. */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onBlockIgnite(BlockIgniteEvent event) {
+        Block origin = event.getBlock();
+        for (BlockFace face : SELF_AND_NEIGHBOURS) {
+            Block block = origin.getRelative(face);
+            Optional<String> bombId = BombBlocks.bombIdOf(block);
+            if (bombId.isEmpty()) {
+                continue;
+            }
+            plugin.registry().get(bombId.get()).ifPresent(bomb -> ignite(block, bomb, null));
+        }
+    }
 
-        RigHandle handle = rig.get();
-        CustomTnt tnt = bomb.get();
-        Location center = handle.blockLocation().add(0.5, 0.5, 0.5);
+    /** A bomb block that becomes powered lights, like a redstone-fed vanilla TNT. */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onRedstone(BlockRedstoneEvent event) {
+        if (event.getNewCurrent() <= 0 || event.getNewCurrent() <= event.getOldCurrent()) {
+            return; // only a rising edge to powered can prime
+        }
+        Block origin = event.getBlock();
+        for (BlockFace face : SELF_AND_NEIGHBOURS) {
+            Block block = origin.getRelative(face);
+            Optional<String> bombId = BombBlocks.bombIdOf(block);
+            if (bombId.isEmpty()) {
+                continue;
+            }
+            if (block.isBlockPowered() || block.isBlockIndirectlyPowered()) {
+                plugin.registry().get(bombId.get()).ifPresent(bomb -> ignite(block, bomb, null));
+            }
+        }
+    }
 
-        tntRig.prime(handle, tnt.fuseTicks(), () -> {
-            plugin.detonator().detonate(tnt, center, player);
-            tntRig.removeRig(handle);
-        });
-
-        damageFlintAndSteel(player, event.getHand(), used);
-        center.getWorld().playSound(center, Sound.ITEM_FLINTANDSTEEL_USE, 1.0f, 1.0f);
-        center.getWorld().playSound(center, Sound.ENTITY_TNT_PRIMED, 1.0f, 1.0f);
-        player.sendActionBar(Component.text("Fuse lit!", NamedTextColor.GOLD));
+    /**
+     * Lights {@code block}'s fuse for {@code bomb}, wiring the fuse-elapsed callback to the shared
+     * {@link org.xpfarm.tntlibrary.detonation.Detonator}. {@code igniter} may be {@code null} for an
+     * environmental trigger. Returns whether a new fuse actually started (a block already burning is
+     * left alone).
+     */
+    private boolean ignite(Block block, CustomTnt bomb, Player igniter) {
+        if (plugin.bombFuse().isBurning(block)) {
+            return false;
+        }
+        Location center = block.getLocation().toCenterLocation();
+        return plugin.bombFuse().light(block, bomb.id(), bomb.fuseTicks(),
+                () -> plugin.detonator().detonate(bomb, center, igniter));
     }
 
     /** The stack in the given hand, or {@code null} if that hand is empty. */

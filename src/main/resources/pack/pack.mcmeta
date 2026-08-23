@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "TNT Library — Water Bomb (claims minecraft:note_block state instrument=pling,note=19,powered=false; adds tnt_library block/item assets)",
+    "min_format": 84,
+    "max_format": 84
+  }
+}

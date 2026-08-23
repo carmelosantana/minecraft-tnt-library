@@ -35,8 +35,9 @@ import org.xpfarm.tntlibrary.detonation.DetonationContext;
  * <p>Like {@code redstone-stuff}'s {@code RedstoneSword}, a "custom item" here is just a vanilla
  * material selected by the {@code minecraft:item_model} data component via {@link
  * ItemMeta#setItemModel(NamespacedKey)}: Paper 26.1 exposes no custom-item registry. The model key
- * {@link #ITEM_MODEL_KEY} ({@code tnt_library:waterbomb}) resolves against a resource pack whose
- * texture lands in a later task; only the key needs to be correct now.
+ * {@link #ITEM_MODEL_KEY} ({@code tnt_library:waterbomb}) resolves against the bundled resource pack
+ * ({@code assets/tnt_library/items/waterbomb.json} → the block cube model), so the item shows as the
+ * 3D Water Bomb cube in the inventory.
  *
  * <h2>Identity, no attribute modifiers</h2>
  *
