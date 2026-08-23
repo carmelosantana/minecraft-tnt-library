@@ -6,7 +6,7 @@ Copy this file for one plugin and replace every `<...>` field. Leave an unchecke
 - Slug: `tnt-library`
 - Repository: `carmelosantana/minecraft-tnt-library`
 - Owner: `Carmelo Santana`
-- Target version: `0.1.0`
+- Target version: `0.1.1`
 - Paper version: `26.1.2 build 74`
 - Java version: `25`
 - Updater destination: `tnt-library.jar`
@@ -147,9 +147,9 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 
 ## 6. Tests and build
 
-- [x] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable. → **81 tests** across core (registry/keys/recipe-spec), config (never-throws parsing, bad-value defaults, provider), item (recipe shape/id), **block (the note_block state-claim table: completeness vs. `BombType`, distinct notes, round-trip, canonical key)**, detonation (crater/rim math), command (subcommand routing, amount parsing, permission constants). (Down from 86: the display-entity rig's pure tests were removed with the rig; the block state-claim test replaces them.)
+- [x] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable. → **118 tests** across core (registry/keys/recipe-spec), config (never-throws parsing, bad-value defaults, provider, **`PackDefaults` classpath load + `${...}`-placeholder coercion, and the full `resource-pack.url`/`.sha1` resolution order in `ResourcePackResolutionTest`**), item (recipe shape/id), block (the note_block state-claim table: completeness vs. `BombType`, distinct notes, round-trip, canonical key), detonation (crater/rim math), command (subcommand routing, amount parsing, permission constants), and **delivery (the join-time Adventure `ResourcePackRequest` factory, the pure `PackDeliveryDecision`, and the reflective `BedrockDetector`)**. (v0.1.1 adds the resource-pack delivery + PackSquash pipeline on top of the v0.1.0 real-block re-architecture.)
 - [x] `PluginDescriptorTest` parses `plugin.yml` and `config.yml` with SnakeYAML and asserts `name`, `main`, a `String`-typed `api-version`, a fully-substituted `version`, every command the code looks up, every permission the code checks, and the declared soft dependencies. → present; asserts `tntlibrary` command and `tntlibrary.admin` / `.command.give` / `.command.reload` / `.use.waterbomb` (the nodes the command + listeners check) and `WorldGuard` softdepend.
-- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds. → BUILD SUCCESS, 81 tests, 0 failures.
+- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds. → BUILD SUCCESS, 118 tests, 0 failures. Verified green under all three pack-hash conditions: empty (plain local build), the literal `${tnt.pack.sha1}` placeholder (the environment quirk that broke CI), and a real baked hash via `-Dtnt.pack.sha1=<hash>` (the CI/release path).
 - [x] The shaded releasable JAR and embedded `plugin.yml` were inspected; `original-*` JARs are excluded. → `target/tnt-library-0.1.0.jar`; embedded `plugin.yml` `version: '0.1.0'` (substituted), correct main/api-version/commands/permissions/`loadbefore`; **0** `org/bukkit` or `io/papermc` classes bundled (provided scope correct); the Java resource pack (`pack/**`) and Geyser assets (`geyser/**`, unfiltered so PNGs/JSON ship byte-for-byte) are bundled; 33 plugin classes, rig package gone; `original-tnt-library-0.1.0.jar` is the pre-shade intermediate, not a release asset.
 
 ## 7. Matrix
@@ -164,12 +164,15 @@ Booted a fresh disposable Legendary stack on `target/tnt-library-0.1.0.jar` via 
 - **`onLoad` Geyser installer:** logged `Installed/updated 6 Geyser custom-block asset file(s) in Geyser-Spigot`; verified the mapping + Bedrock pack (6 files) landed at `/minecraft/plugins/Geyser-Spigot/{custom_mappings,packs/tnt_library}`; Geyser (with `enable-custom-content: true`) parsed the mapping and registered custom blocks with **no error** about our file.
 - Log scan: **no exceptions, no SEVERE, no leaked secrets**; clean `Loading`/`Enabling`/`enabled — 1 bomb(s) registered` lines. Torn down with `down` (slot released, no leak).
 
+**v0.1.1 re-verification (resource-pack delivery delta) — DONE.** Rebooted a fresh disposable stack on `target/tnt-library-0.1.1.jar`, built with a real placeholder hash (`-Dtnt.pack.sha1=…`) so the join-time delivery path was **armed** (`packDeliveryEnabled` true). `up` exit 0 — Paper `Done (14.123s)`, Java port served protocol 775, and RCON `plugins` listed **`TNTLibrary` v0.1.1 green** alongside floodgate, Geyser-Spigot, ViaVersion. The new `ResourcePackDeliveryListener` registered in `onEnable` with **no exception**, and the absence of the "resource-pack … not configured yet" INFO confirms delivery was armed rather than silently disabled. `/tntlibrary list` and `/tntlibrary reload` worked; the `onLoad` Geyser installer wrote its 6 asset files; log scan clean (no exceptions/SEVERE/secrets). Torn down cleanly. **Still gate-12:** the actual pack **download by a real joining client** (Java accepts, Bedrock is skipped) is not headlessly reachable — no client joins the RCON stack — so it stays on the play-test obligation below.
+
 **Behaviors NOT reachable headlessly — gate-12 play-test obligation (real Java + Bedrock client on `play.xpfarm.org`, with Geyser `enable-custom-content: true`):**
 - Crafting the Water Bomb (TNT + 4 water buckets) actually yields the item, and the item shows as the **3D cube in inventory** (item_model → block model).
 - Placing the item yields the claimed `note_block` state (no vanilla TNT) and the cube **renders on Java AND Bedrock** (the whole reason for the Custom Blocks re-architecture — must confirm the Bedrock cube actually draws).
 - **Real-TNT ignition parity:** flint & steel, fire/lava spread, and redstone each light the fuse → smoke+primed cue → explosion → **crater floods with permanent water sources to the rim** (Nether skips the fill); WG/GriefPrevention spare protected regions.
 - **Physics lock** holds (the note-block instrument never re-derives from the block below), the block is **silent**, and **breaking it returns the Water Bomb item**.
 - Edge case: a hand-tuned real note block at `instrument=pling,note=19,powered=false` would be treated as a bomb (documented low-probability limitation) — spot-check acceptability.
+- **Resource-pack delivery (v0.1.1):** a joining **Java** player is offered/receives the CI-published pack over the baked URL+SHA-1 and, on accept, sees the custom block/item textures; a **Bedrock** player is skipped (Geyser serves the Bedrock pack) and is not disconnected; a `resource-pack.required: true` server behaves as configured.
 
 ### 7b — full-roster matrix — NOT RUN (out-of-band, not required for this release)
 
