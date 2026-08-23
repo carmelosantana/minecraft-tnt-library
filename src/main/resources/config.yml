@@ -13,12 +13,19 @@ bombs:
     fuse-ticks: 80
   twins:
     enabled: true
-    radius: 3
+    radius: 3            # beam/trench thickness (per-sample blast power, clamped 1..8)
     fuse-ticks: 80
+    max-pair-distance: 64  # a Twin fizzles if its nearest opposite is farther than this (blocks)
   smartbomb:
     enabled: true
     default-radius: 4
     default-delay-ticks: 100
+    # Trigger defaults a freshly placed Smart Bomb is seeded with; a player's programming overrides
+    # them. proximity/time triggers default off, so an unprogrammed Smart Bomb behaves like a plain
+    # timed fuse (default-delay-ticks).
+    default-proximity-radius: 6
+    proximity-default: false
+    time-trigger-default: false
   fbomb:
     enabled: false
     fuse-ticks: 60

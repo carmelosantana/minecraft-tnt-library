@@ -4,14 +4,17 @@
   "padding": 8,
   "num_mip_levels": 4,
   "texture_data": {
-    "tnt_library_waterbomb_top": {
-      "textures": "textures/blocks/waterbomb_top"
-    },
-    "tnt_library_waterbomb_side": {
-      "textures": "textures/blocks/waterbomb_side"
-    },
-    "tnt_library_waterbomb_bottom": {
-      "textures": "textures/blocks/waterbomb_bottom"
-    }
+    "tnt_library_waterbomb_top": { "textures": "textures/blocks/waterbomb_top" },
+    "tnt_library_waterbomb_side": { "textures": "textures/blocks/waterbomb_side" },
+    "tnt_library_waterbomb_bottom": { "textures": "textures/blocks/waterbomb_bottom" },
+    "tnt_library_twins_white_top": { "textures": "textures/blocks/twins_white_top" },
+    "tnt_library_twins_white_side": { "textures": "textures/blocks/twins_white_side" },
+    "tnt_library_twins_white_bottom": { "textures": "textures/blocks/twins_white_bottom" },
+    "tnt_library_twins_black_top": { "textures": "textures/blocks/twins_black_top" },
+    "tnt_library_twins_black_side": { "textures": "textures/blocks/twins_black_side" },
+    "tnt_library_twins_black_bottom": { "textures": "textures/blocks/twins_black_bottom" },
+    "tnt_library_smartbomb_top": { "textures": "textures/blocks/smartbomb_top" },
+    "tnt_library_smartbomb_side": { "textures": "textures/blocks/smartbomb_side" },
+    "tnt_library_smartbomb_bottom": { "textures": "textures/blocks/smartbomb_bottom" }
   }
 }

@@ -129,7 +129,9 @@ final class TntLibraryConfigTest {
         assertTrue(config.masterEnabled());
 
         assertEquals(new BombSettings(true, 4, 80, 0), config.bomb("waterbomb"));
-        assertEquals(new BombSettings(true, 3, 80, 0), config.bomb("twins"));
+        // twins: radius=3 (thickness), fuse=80, hang slot repurposed as max-pair-distance=64 (absent
+        // from this YAML, so it falls to the BombType default).
+        assertEquals(new BombSettings(true, 3, 80, 64), config.bomb("twins"));
         assertEquals(new BombSettings(true, 4, 100, 0), config.bomb("smartbomb"));
         assertEquals(new BombSettings(false, 0, 60, 0), config.bomb("fbomb"));
         assertEquals(new BombSettings(false, 20, 60, 50), config.bomb("gbomb"));

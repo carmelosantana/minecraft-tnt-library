@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "tnt_library:block/twins_black_top",
+    "side": "tnt_library:block/twins_black_side",
+    "bottom": "tnt_library:block/twins_black_bottom",
+    "particle": "tnt_library:block/twins_black_side"
+  }
+}

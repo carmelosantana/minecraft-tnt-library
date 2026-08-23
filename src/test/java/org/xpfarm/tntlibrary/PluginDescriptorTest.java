@@ -101,6 +101,8 @@ final class PluginDescriptorTest {
         // The command layer (TntCommand) gates give/list on this node and reload on the next.
         assertTrue(permissions.containsKey("tntlibrary.command.give"),
                 "tntlibrary.command.give must be declared — TntCommand checks it for give/list");
+        assertTrue(permissions.containsKey("tntlibrary.command.smart"),
+                "tntlibrary.command.smart must be declared — TntCommand checks it for smart get/set");
         assertTrue(permissions.containsKey("tntlibrary.command.reload"),
                 "tntlibrary.command.reload must be declared — TntCommand checks it for reload");
 

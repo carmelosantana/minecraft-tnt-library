@@ -17,6 +17,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.xpfarm.tntlibrary.block.BombFuse;
 import org.xpfarm.tntlibrary.command.TntCommand;
+import org.xpfarm.tntlibrary.config.BombSettings;
 import org.xpfarm.tntlibrary.config.TntLibraryConfig;
 import org.xpfarm.tntlibrary.core.CustomTnt;
 import org.xpfarm.tntlibrary.core.TntRegistry;
@@ -32,6 +33,11 @@ import org.xpfarm.tntlibrary.listener.IgnitionListener;
 import org.xpfarm.tntlibrary.listener.PlacementListener;
 import org.xpfarm.tntlibrary.protect.AllowAllProtection;
 import org.xpfarm.tntlibrary.protect.ProtectionService;
+import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
+import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
+import org.xpfarm.tntlibrary.twins.PlacedTwinIndex;
+import org.xpfarm.tntlibrary.twins.TheTwins;
+import org.xpfarm.tntlibrary.twins.TwinColor;
 
 /**
  * Plugin bootstrap for TNT Library: the Phase-1 wiring that connects the already-built layers so a
@@ -65,6 +71,17 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private BombFuse bombFuse;
     private Detonator detonator;
     private ResourcePackDeliveryListener packDeliveryListener;
+    private SmartBombFeature smartBomb;
+
+    /**
+     * The shared, per-world register of placed Twins. Built once at construction and never rebuilt —
+     * placed Twins are real blocks that survive a config reload, so a {@code /tntlibrary reload} must
+     * not drop the index. Both Twin variant instances registered in {@link #registerEnabledBombs} share
+     * this one instance; the placement/break listeners add and remove entries, and {@code
+     * TheTwins.detonate} removes a spent pair itself. (A full server reload builds a fresh plugin
+     * instance and so a fresh, empty index — the documented cold-start limitation.)
+     */
+    private final PlacedTwinIndex placedTwinIndex = new PlacedTwinIndex();
 
     @Override
     public void onLoad() {
@@ -83,6 +100,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
 
         this.bombFuse = new BombFuse(this);
         this.detonator = new Detonator(this, config, protection);
+
+        this.smartBomb = new SmartBombFeature(this, config);
+        smartBomb.enable();
 
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
@@ -119,6 +139,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
                 BombRecipes.unregister(this, bomb);
             }
         }
+        if (smartBomb != null) {
+            smartBomb.disable();
+        }
         getLogger().info("TNTLibrary disabled.");
     }
 
@@ -141,6 +164,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
         registerEnabledBombs(config);
         this.detonator = new Detonator(this, config, protection);
         registerDeliveryListener();
+        if (smartBomb != null) {
+            smartBomb.disable();
+        }
+        this.smartBomb = new SmartBombFeature(this, config);
+        smartBomb.enable();
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
         }
@@ -162,10 +190,22 @@ public final class TntLibraryPlugin extends JavaPlugin {
         return summary.toString();
     }
 
-    /** Registers every Phase-1 bomb whose config says {@code enabled}. Phase 1 = only the Water Bomb. */
+    /** Registers every bomb whose config says {@code enabled}. */
     private void registerEnabledBombs(TntLibraryConfig cfg) {
         if (cfg.bomb(WaterBomb.ID).enabled()) {
             registry.register(new WaterBomb(cfg.bomb(WaterBomb.ID).fuseTicks()));
+        }
+        if (cfg.bomb(TwinColor.BASE_ID).enabled()) {
+            // Both Twin variants share the base bombs.twins settings and the ONE placedTwinIndex:
+            // fuse-ticks → fuse, radius → beam thickness, the repurposed hang slot → max-pair-distance.
+            BombSettings twins = cfg.bomb(TwinColor.BASE_ID);
+            registry.register(new TheTwins(
+                    TwinColor.WHITE, twins.fuseTicks(), twins.radius(), twins.hangTicks(), placedTwinIndex));
+            registry.register(new TheTwins(
+                    TwinColor.BLACK, twins.fuseTicks(), twins.radius(), twins.hangTicks(), placedTwinIndex));
+        }
+        if (cfg.bomb(SmartBomb.ID).enabled()) {
+            registry.register(new SmartBomb(cfg.bomb(SmartBomb.ID).fuseTicks()));
         }
     }
 
@@ -198,6 +238,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
         return bombFuse;
     }
 
+    /** The shared per-world register of placed Twins; stable across a reload (see the field javadoc). */
+    public PlacedTwinIndex placedTwinIndex() {
+        return placedTwinIndex;
+    }
+
     /** The live detonation entry point; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */
     public Detonator detonator() {
         return detonator;
@@ -206,5 +251,10 @@ public final class TntLibraryPlugin extends JavaPlugin {
     /** The current validated configuration snapshot. */
     public TntLibraryConfig config() {
         return config;
+    }
+
+    /** The Smart Bomb feature module; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */
+    public SmartBombFeature smartBomb() {
+        return smartBomb;
     }
 }

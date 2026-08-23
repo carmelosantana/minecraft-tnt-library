@@ -25,6 +25,9 @@ import org.xpfarm.tntlibrary.block.BombBlocks;
 import org.xpfarm.tntlibrary.command.Permissions;
 import org.xpfarm.tntlibrary.core.CustomTnt;
 import org.xpfarm.tntlibrary.item.BombItems;
+import org.xpfarm.tntlibrary.twins.PlacedTwin;
+import org.xpfarm.tntlibrary.twins.TwinColor;
+import org.xpfarm.tntlibrary.twins.TwinLocation;
 
 /**
  * Turns placing a bomb item into a real, claimed {@code note_block} state — the block that renders as
@@ -88,5 +91,13 @@ public final class PlacementListener implements Listener {
         placed.setBlockData(BombBlocks.blockDataFor(id), false);
         placed.getWorld().playSound(placed.getLocation().toCenterLocation(),
                 Sound.BLOCK_SAND_PLACE, 0.8f, 1.1f);
+
+        // A placed Twin joins the shared index so its opposite can find it at detonation time. The
+        // TwinLocation is built from block coords + world UID exactly as TheTwins.detonate does, so the
+        // add-key and the lookup-key are identical. (Break removal is in BombGuardListener; a spent or
+        // fizzled pair is removed by TheTwins.detonate itself.)
+        TwinColor.fromVariantId(id).ifPresent(color -> plugin.placedTwinIndex().add(new PlacedTwin(
+                new TwinLocation(placed.getWorld().getUID(), placed.getX(), placed.getY(), placed.getZ()),
+                color)));
     }
 }
