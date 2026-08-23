@@ -1,0 +1,50 @@
+name: TNTLibrary
+version: '${project.version}'
+main: org.xpfarm.tntlibrary.TntLibraryPlugin
+api-version: '26.1'
+author: Carmelo Santana
+website: https://xpfarm.org
+description: A custom-TNT framework and a set of creative, premium explosives with matching textures on Java and Bedrock clients
+softdepend: [WorldGuard, GriefPrevention]
+
+commands:
+  tntlibrary:
+    description: Manage and dispense TNT Library explosives
+    usage: /tntlibrary <give <bomb> [player] [amount] | list | reload | smart <get|set> <key> <value>>
+    aliases: [tntlib]
+
+permissions:
+  tntlibrary.admin:
+    description: Full access to all TNT Library admin commands and bombs
+    default: op
+    children:
+      tntlibrary.command.give: true
+      tntlibrary.command.smart: true
+      tntlibrary.command.reload: true
+  tntlibrary.command.give:
+    description: Use /tntlibrary give
+    default: op
+  tntlibrary.command.smart:
+    description: Program a placed Smart Bomb
+    default: op
+  tntlibrary.command.reload:
+    description: Reload the TNT Library configuration
+    default: op
+  tntlibrary.use.waterbomb:
+    description: Craft and ignite the Water Bomb
+    default: true
+  tntlibrary.use.twins:
+    description: Craft and ignite The Twins
+    default: true
+  tntlibrary.use.smartbomb:
+    description: Craft and ignite the Smart Bomb
+    default: true
+  tntlibrary.use.fbomb:
+    description: Craft and ignite the F-Bomb
+    default: op
+  tntlibrary.use.gbomb:
+    description: Craft and ignite the G-Bomb
+    default: op
+  tntlibrary.use.whiteout:
+    description: Craft and ignite White Out
+    default: op

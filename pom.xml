@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.xpfarm</groupId>
+    <artifactId>tnt-library</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License v3.0 or later</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <name>TNTLibrary</name>
+    <description>A custom-TNT framework and a set of creative, premium explosives with matching textures on Java and Bedrock clients</description>
+    <url>https://xpfarm.org</url>
+
+    <developers>
+        <developer>
+            <name>Carmelo Santana</name>
+            <url>https://xpfarm.org</url>
+        </developer>
+    </developers>
+
+    <properties>
+        <maven.compiler.release>25</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>papermc-repo</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <!--
+            paper-api is the only compile dependency, deliberately. Bedrock support ships as a
+            Geyser `custom_mappings` JSON file rather than through the Geyser API, and the single
+            Floodgate isBedrockPlayer check is done reflectively (see redstone-stuff for the proven
+            pattern). Region-protection integrations (WorldGuard / GriefPrevention) are also
+            resolved reflectively and declared only as plugin.yml softdepends.
+        -->
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>26.1.2.build.74-stable</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <resources>
+            <!--
+                Two resource blocks, and the split is load-bearing once art lands.
+
+                plugin.yml and config.yml are filtered so `${project.version}` resolves. The Java
+                resource-pack (pack/**) and Bedrock-pack (bedrock/**) sources are NOT filtered:
+                they will include PNG textures, and Maven resource filtering rewrites files as text
+                — a filtered PNG is a corrupted PNG that only surfaces as a missing texture on a
+                real client. The pack/ and bedrock/ trees do not exist yet (added at the dev gate);
+                the excludes are harmless until then.
+            -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>pack/**</exclude>
+                    <exclude>bedrock/**</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>pack/**</include>
+                    <include>bedrock/**</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
+</project>

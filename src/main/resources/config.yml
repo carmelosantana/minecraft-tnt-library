@@ -1,0 +1,46 @@
+# TNT Library configuration
+# See docs/PLUGIN_CHECKLIST.md for the full scope. Bad values degrade to the defaults shown here
+# with a WARNING naming the key; they never fail plugin startup.
+
+# Master switch for the whole plugin.
+enabled: true
+
+# Per-bomb toggles. Dangerous bombs default to false on a public server; operators opt in.
+bombs:
+  waterbomb:
+    enabled: true
+    radius: 4
+    fuse-ticks: 80
+  twins:
+    enabled: true
+    radius: 3
+    fuse-ticks: 80
+  smartbomb:
+    enabled: true
+    default-radius: 4
+    default-delay-ticks: 100
+  fbomb:
+    enabled: false
+    fuse-ticks: 60
+  gbomb:
+    enabled: false
+    radius: 20
+    fuse-ticks: 60
+    hang-ticks: 50
+  whiteout:
+    enabled: false
+    pull-radius: 24
+    fuse-ticks: 100
+
+# Region / claim protection. When respect-regions is true, explosions, the Water Bomb crater-fill,
+# and the White Out pull skip protected regions where a supported provider is present.
+protection:
+  respect-regions: true
+  provider: auto   # auto | worldguard | griefprevention | none
+
+# Resource-pack delivery. Left empty here; a released build bakes in a CI-generated URL + SHA-1
+# (added at the dev gate). Empty = delivery disabled (INFO, not an error).
+resource-pack:
+  url: ''
+  sha1: ''
+  required: false
