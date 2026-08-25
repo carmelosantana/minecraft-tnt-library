@@ -15,6 +15,12 @@
     "tnt_library_twins_black_bottom": { "textures": "textures/blocks/twins_black_bottom" },
     "tnt_library_smartbomb_top": { "textures": "textures/blocks/smartbomb_top" },
     "tnt_library_smartbomb_side": { "textures": "textures/blocks/smartbomb_side" },
-    "tnt_library_smartbomb_bottom": { "textures": "textures/blocks/smartbomb_bottom" }
+    "tnt_library_smartbomb_bottom": { "textures": "textures/blocks/smartbomb_bottom" },
+    "tnt_library_fbomb_top": { "textures": "textures/blocks/fbomb_top" },
+    "tnt_library_fbomb_side": { "textures": "textures/blocks/fbomb_side" },
+    "tnt_library_fbomb_bottom": { "textures": "textures/blocks/fbomb_bottom" },
+    "tnt_library_gbomb_top": { "textures": "textures/blocks/gbomb_top" },
+    "tnt_library_gbomb_side": { "textures": "textures/blocks/gbomb_side" },
+    "tnt_library_gbomb_bottom": { "textures": "textures/blocks/gbomb_bottom" }
   }
 }

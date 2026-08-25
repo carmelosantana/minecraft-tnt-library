@@ -88,6 +88,48 @@
               "face_dimming": true
             }
           }
+        },
+        "instrument=pling,note=22,powered=false": {
+          "unit_cube": true,
+          "destructible_by_mining": 1,
+          "material_instances": {
+            "up": {
+              "texture": "tnt_library_fbomb_top",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "down": {
+              "texture": "tnt_library_fbomb_bottom",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "*": {
+              "texture": "tnt_library_fbomb_side",
+              "render_method": "opaque",
+              "face_dimming": true
+            }
+          }
+        },
+        "instrument=pling,note=23,powered=false": {
+          "unit_cube": true,
+          "destructible_by_mining": 1,
+          "material_instances": {
+            "up": {
+              "texture": "tnt_library_gbomb_top",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "down": {
+              "texture": "tnt_library_gbomb_bottom",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "*": {
+              "texture": "tnt_library_gbomb_side",
+              "render_method": "opaque",
+              "face_dimming": true
+            }
+          }
         }
       }
     }

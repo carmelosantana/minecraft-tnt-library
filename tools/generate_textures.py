@@ -58,6 +58,18 @@ PALETTE = {
     "E": (0x79, 0xC7, 0xB8, 255),  # etched-line highlight
     "O": (0xB6, 0xFF, 0xEE, 255),  # core glow
     "A": (0xFF, 0xC2, 0x4D, 255),  # lit core amber
+    # --- F-Bomb (fake-Wither): charred nether body + soul-fire skull glow ---
+    "X": (0x0A, 0x0A, 0x0C, 255),  # near-black border / outline
+    "M": (0x20, 0x20, 0x26, 255),  # charred body
+    "I": (0x38, 0x38, 0x42, 255),  # ash plate / field
+    "L": (0x27, 0xC2, 0xD4, 255),  # soul-fire glow (eyes, mouth)
+    "J": (0x9C, 0xF2, 0xFB, 255),  # soul-fire highlight
+    # --- G-Bomb (anti-gravity): void-purple body + magenta launch/vortex glow ---
+    "V": (0x1A, 0x0A, 0x2A, 255),  # void border / outline
+    "U": (0x3D, 0x1E, 0x5E, 255),  # body purple
+    "R": (0x6E, 0x3A, 0xA6, 255),  # violet ring / trace
+    "Z": (0xC8, 0x6A, 0xF0, 255),  # magenta glow (arrow, rings)
+    "Y": (0xE9, 0xD2, 0xFF, 255),  # pale glow highlight
 }
 
 # --- Water Bomb -------------------------------------------------------------------------------
@@ -307,6 +319,130 @@ SMARTBOMB_BOTTOM = [
     "QQQQQQQQQQQQQQQQ",
 ]
 
+# --- F-Bomb (fake-Wither): a soul-lit wither skull on charred nether stone ------------------
+
+# SIDE: the iconic three-eyed wither skull face, soul-fire glow for eyes/nose, a toothy jaw.
+FBOMB_SIDE = [
+    "XXXXXXXXXXXXXXXX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMIIIIIIIIIIMMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMILLIIIIIILLIMX",
+    "XMILLIIIIIILLIMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMIIIIILLIIIIIMX",
+    "XMIIIILLLLIIIIMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMILILILILILILMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMMIIIIIIIIIIMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XXXXXXXXXXXXXXXX",
+]
+
+# TOP: soul-fire bloom seen from above -- a bright cross of glow over ash, pale core.
+FBOMB_TOP = [
+    "XXXXXXXXXXXXXXXX",
+    "XMMMMMMMMMMMMMMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMIIIIILLIIIIIMX",
+    "XMIIIIILLIIIIIMX",
+    "XMIIILLLLLLIIIMX",
+    "XMIIILLJJLLIIIMX",
+    "XMIIILLJJLLIIIMX",
+    "XMIIILLLLLLIIIMX",
+    "XMIIIIILLIIIIIMX",
+    "XMIIIIILLIIIIIMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMIIIIIIIIIIIIMX",
+    "XMMMMMMMMMMMMMMX",
+    "XXXXXXXXXXXXXXXX",
+]
+
+# BOTTOM: calmer charred stone with a small soul-ember cluster and faint ash dashes.
+FBOMB_BOTTOM = [
+    "XXXXXXXXXXXXXXXX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMMIIMMMMMMMMMX",
+    "XMMMMMMMMMLMMMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMMMMMLLMMMMMMX",
+    "XMMMMMLJJLMMMMMX",
+    "XMMMMMLJJLMMMMMX",
+    "XMMMMMMLLMMMMMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMIIMMMMMMMMMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XMMMMMMMMMMMMMMX",
+    "XXXXXXXXXXXXXXXX",
+]
+
+# --- G-Bomb (anti-gravity): a magenta launch-arrow / gravity vortex on void purple ----------
+
+# SIDE: a bold upward arrow -- "launch" -- pale-lit tip, magenta shaft, on void body.
+GBOMB_SIDE = [
+    "VVVVVVVVVVVVVVVV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUYYUUUUUUV",
+    "VUUUUUZZZZUUUUUV",
+    "VUUUUZZZZZZUUUUV",
+    "VUUUZZZZZZZZUUUV",
+    "VUUZZZZZZZZZZUUV",
+    "VUUUUUUZZUUUUUUV",
+    "VUUUUUUZZUUUUUUV",
+    "VUUUUUUZZUUUUUUV",
+    "VUUUUUUZZUUUUUUV",
+    "VUUUUUUZZUUUUUUV",
+    "VUUUUUUZZUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VVVVVVVVVVVVVVVV",
+]
+
+# TOP: a gravity well seen from above -- concentric violet/magenta rings with a pale core.
+GBOMB_TOP = [
+    "VVVVVVVVVVVVVVVV",
+    "VUUUUUUUUUUUUUUV",
+    "VURRRRRRRRRRRRUV",
+    "VURUUUUUUUUUURUV",
+    "VURUZZZZZZZZURUV",
+    "VURUZUUUUUUZURUV",
+    "VURUZUYYYYUZURUV",
+    "VURUZUYYYYUZURUV",
+    "VURUZUYYYYUZURUV",
+    "VURUZUYYYYUZURUV",
+    "VURUZUUUUUUZURUV",
+    "VURUZZZZZZZZURUV",
+    "VURUUUUUUUUUURUV",
+    "VURRRRRRRRRRRRUV",
+    "VUUUUUUUUUUUUUUV",
+    "VVVVVVVVVVVVVVVV",
+]
+
+# BOTTOM: calm void with a faint single violet ring.
+GBOMB_BOTTOM = [
+    "VVVVVVVVVVVVVVVV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUURRRRUUUUUV",
+    "VUUUUURUURUUUUUV",
+    "VUUUUURUURUUUUUV",
+    "VUUUUURRRRUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VUUUUUUUUUUUUUUV",
+    "VVVVVVVVVVVVVVVV",
+]
+
 # Registry: {bomb name: {face: pixel-map}}. Faces render to <name>_<face>.png in both trees.
 BOMBS = {
     "waterbomb": {
@@ -328,6 +464,16 @@ BOMBS = {
         "top": SMARTBOMB_TOP,
         "side": SMARTBOMB_SIDE,
         "bottom": SMARTBOMB_BOTTOM,
+    },
+    "fbomb": {
+        "top": FBOMB_TOP,
+        "side": FBOMB_SIDE,
+        "bottom": FBOMB_BOTTOM,
+    },
+    "gbomb": {
+        "top": GBOMB_TOP,
+        "side": GBOMB_SIDE,
+        "bottom": GBOMB_BOTTOM,
     },
 }
 

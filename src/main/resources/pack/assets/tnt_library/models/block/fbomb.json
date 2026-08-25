@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "tnt_library:block/fbomb_top",
+    "side": "tnt_library:block/fbomb_side",
+    "bottom": "tnt_library:block/fbomb_bottom",
+    "particle": "tnt_library:block/fbomb_side"
+  }
+}
