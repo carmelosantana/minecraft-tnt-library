@@ -43,28 +43,38 @@ import org.xpfarm.tntlibrary.block.BombBlocks;
  */
 public final class FBombShow {
 
-    private final Plugin plugin;
     private final UUID id;
     private final Block sourceBlock;
     private final Location rigCenter;
     private final FBombParams params;
     private final FBombRig rig;
     private final BossBar bossBar;
-    private final Entity igniter;
+
+    /**
+     * The show's own elapsed cinematic clock, counting 0, 1, 2, … across successive {@link
+     * #tick(long)} calls. The phase math, SUMMON gate, skull schedule, and boss-bar progress are
+     * all driven off THIS — never the director's global server tick, which never resets and would
+     * force every newly-summoned show straight to DONE.
+     */
+    private long elapsed = 0L;
 
     private boolean finished;
     private boolean toreDown;
 
+    /**
+     * @param plugin accepted for signature parity with the plan's mandated constructor; not retained
+     *     (the show holds no plugin reference)
+     * @param igniter accepted for signature parity / future use; not retained — skulls target the
+     *     nearest boss-bar viewer, not the igniter
+     */
     public FBombShow(Plugin plugin, UUID id, Block sourceBlock, Location rigCenter,
             FBombParams params, FBombRig rig, BossBar bossBar, Entity igniter) {
-        this.plugin = plugin;
         this.id = id;
         this.sourceBlock = sourceBlock;
         this.rigCenter = rigCenter.clone();
         this.params = params;
         this.rig = rig;
         this.bossBar = bossBar;
-        this.igniter = igniter;
     }
 
     /** The block the F-Bomb was placed on; the director dedupes summons by its location. */
@@ -98,7 +108,9 @@ public final class FBombShow {
             return;
         }
 
-        CinematicPhase phase = CinematicStateMachine.phaseAt(tick, params.menaceTicks());
+        // Phase/gate/schedule/progress are driven off the per-show elapsed clock; the passed global
+        // server tick is used only for the cosmetic rig bob (a monotonic value is all it needs).
+        CinematicPhase phase = CinematicStateMachine.phaseAt(elapsed, params.menaceTicks());
         switch (phase) {
             case SUMMON -> summon(tick);
             case MENACE -> menace(tick);
@@ -109,10 +121,14 @@ public final class FBombShow {
                 finished = true;
             }
         }
+        // Advance the elapsed clock AFTER evaluating this tick's phase, so the sequence of values
+        // seen across calls is 0, 1, 2, …: the first call sees elapsed==0 (SUMMON roar), and BLAST
+        // lands exactly when elapsed==menaceTicks. Once finished, the director never ticks again.
+        elapsed++;
     }
 
     private void summon(long tick) {
-        if (tick == 0L) {
+        if (elapsed == 0L) {
             World world = rigCenter.getWorld();
             if (world != null) {
                 world.playSound(rigCenter, Sound.ENTITY_WITHER_SPAWN, 4f, 0.6f);
@@ -124,8 +140,8 @@ public final class FBombShow {
 
     private void menace(long tick) {
         rig.animate(rigCenter, tick);
-        updateBossBar(tick);
-        if (SkullVolleySchedule.firesAt(tick, params.skullCount(), params.skullCadenceTicks(),
+        updateBossBar();
+        if (SkullVolleySchedule.firesAt(elapsed, params.skullCount(), params.skullCadenceTicks(),
                 CinematicStateMachine.SUMMON_TICKS, params.menaceTicks())) {
             fireSkull();
         }
@@ -139,8 +155,9 @@ public final class FBombShow {
         finished = true;
     }
 
-    private void updateBossBar(long tick) {
-        double progress = Math.max(0.0, Math.min(1.0, 1.0 - (tick / (double) params.menaceTicks())));
+    private void updateBossBar() {
+        double progress =
+                Math.max(0.0, Math.min(1.0, 1.0 - (elapsed / (double) params.menaceTicks())));
         bossBar.setProgress(progress);
         bossBar.setTitle("F-Bomb");
         manageViewers();
@@ -232,13 +249,22 @@ public final class FBombShow {
         return best;
     }
 
-    /** Tears down the boss bar and rig. Idempotent via the {@code toreDown} guard. */
+    /**
+     * Tears down the boss bar and rig. Idempotent via the {@code toreDown} guard. The rig removal is
+     * guaranteed to run even if {@code bossBar.removeAll()} throws, so the rig's BlockDisplay /
+     * Interaction entities can never leak past teardown — the "no orphaned entities EVER" constraint.
+     */
     public void teardown() {
         if (toreDown) {
             return;
         }
         toreDown = true;
-        bossBar.removeAll();
-        rig.remove();
+        try {
+            bossBar.removeAll();
+        } catch (Throwable ignored) {
+            // A boss-bar failure must never strand the rig entities; fall through to rig.remove().
+        } finally {
+            rig.remove();
+        }
     }
 }

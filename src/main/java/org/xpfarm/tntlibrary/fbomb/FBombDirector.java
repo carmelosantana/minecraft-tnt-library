@@ -104,9 +104,28 @@ public final class FBombDirector {
         BossBar bossBar = Bukkit.createBossBar("F-Bomb", BarColor.RED, BarStyle.SOLID);
         rig.spawn(rigCenter);
 
-        FBombShow show = new FBombShow(plugin, id, block, rigCenter, params, rig, bossBar, igniter);
-        active.put(id, show);
-        locations.put(key, id);
+        // The rig entities now exist but are not yet tracked in `active`. If anything between here
+        // and registration throws, tear down the just-spawned rig + boss bar so the RIG_KEY-tagged
+        // entities can never leak untracked until the next cleanupOrphans sweep.
+        try {
+            FBombShow show = new FBombShow(plugin, id, block, rigCenter, params, rig, bossBar, igniter);
+            active.put(id, show);
+            locations.put(key, id);
+        } catch (Throwable t) {
+            active.remove(id);
+            locations.remove(key);
+            try {
+                rig.remove();
+            } catch (Throwable ignored) {
+                // best-effort rollback
+            }
+            try {
+                bossBar.removeAll();
+            } catch (Throwable ignored) {
+                // best-effort rollback
+            }
+            throw t;
+        }
         return true;
     }
 
