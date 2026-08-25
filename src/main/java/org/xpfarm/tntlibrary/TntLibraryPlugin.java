@@ -16,6 +16,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.xpfarm.tntlibrary.block.BombFuse;
+import org.xpfarm.tntlibrary.block.PlacedBombIndex;
 import org.xpfarm.tntlibrary.command.TntCommand;
 import org.xpfarm.tntlibrary.config.BombSettings;
 import org.xpfarm.tntlibrary.config.TntLibraryConfig;
@@ -82,6 +83,14 @@ public final class TntLibraryPlugin extends JavaPlugin {
      * instance and so a fresh, empty index — the documented cold-start limitation.)
      */
     private final PlacedTwinIndex placedTwinIndex = new PlacedTwinIndex();
+
+    /**
+     * The location register the {@link BombGuardListener} uses to heal placed bomb blocks whose
+     * note-block instrument has drifted (see {@link PlacedBombIndex}). Self-populating and in-memory;
+     * like {@link #placedTwinIndex} it starts empty on a cold start and re-registers each bomb on its
+     * first post-restart neighbor update.
+     */
+    private final PlacedBombIndex placedBombIndex = new PlacedBombIndex();
 
     @Override
     public void onLoad() {
@@ -241,6 +250,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
     /** The shared per-world register of placed Twins; stable across a reload (see the field javadoc). */
     public PlacedTwinIndex placedTwinIndex() {
         return placedTwinIndex;
+    }
+
+    /** The location register used to heal drifted bomb blocks; stable across a reload. */
+    public PlacedBombIndex placedBombIndex() {
+        return placedBombIndex;
     }
 
     /** The live detonation entry point; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */
