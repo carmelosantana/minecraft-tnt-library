@@ -10,7 +10,6 @@
 package org.xpfarm.tntlibrary.gbomb;
 
 import java.util.Objects;
-import java.util.UUID;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
@@ -23,9 +22,13 @@ import org.bukkit.event.Listener;
  * The {@code NoGravity} NBT flag persists across chunk/entity unload, so an entity that leaves the
  * world mid-hang — its chunk unloads, it dies, or it is otherwise removed — would be left gravity-off
  * in its persisted NBT forever if the sequence's own restore never ran. This listener closes that hole:
- * whenever a tracked entity is removed from the world, it restores that entity's gravity immediately
- * via {@link GBombRuntime#restore(UUID)} (idempotent — a later slam- or disable-restore of the same id
- * is a harmless no-op).
+ * whenever an entity is removed from the world, it restores that entity's gravity immediately via
+ * {@link GBombRuntime#restore(Entity)}, passing the still-valid event entity so the corrected flag is
+ * written before the NBT serializes. Re-resolving the id with {@code Bukkit.getEntity} on this path is
+ * unsafe — the entity is mid-removal from the world index and can resolve to {@code null}, which would
+ * clear the ledger entry but skip {@code setGravity}, silently defeating this very gate. The single-op
+ * {@code restore(Entity)} forgets and restores in one lookup, and is idempotent — a later slam- or
+ * disable-restore of the same id is a harmless no-op, and an untracked entity is ignored for free.
  *
  * <h2>Chosen event</h2>
  *
@@ -63,10 +66,6 @@ public final class GravityRestoreListener implements Listener {
      */
     @EventHandler
     public void onEntityRemoveFromWorld(EntityRemoveFromWorldEvent event) {
-        Entity entity = event.getEntity();
-        UUID id = entity.getUniqueId();
-        if (runtime.ledger().contains(id)) {
-            runtime.restore(id);
-        }
+        runtime.restore(event.getEntity());
     }
 }

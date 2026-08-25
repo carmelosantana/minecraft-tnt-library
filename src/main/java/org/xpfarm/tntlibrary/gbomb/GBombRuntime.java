@@ -35,9 +35,11 @@ import org.xpfarm.tntlibrary.detonation.DetonationContext;
  * gravity we disabled MUST be restored on every path: normal slam ({@link #restore(UUID)} from the
  * task), task cancel and plugin disable ({@link #cancelAll()} →
  * {@link GBombSequenceTask#cancelAndRestore()} + {@link #restoreAll()}), and chunk/entity unload (the
- * Task-8 listener, via {@link #restore(UUID)} using {@link #ledger()}). Every restore resolves the id
- * to a live entity and calls {@code setGravity(prior)}; a gone entity still has its ledger entry
- * cleared, and an unknown prior defaults to {@code true} so gravity is never left off.
+ * Task-8 listener, via {@link #restore(Entity)} on the still-valid event entity). The scheduled and
+ * teardown paths resolve the id to a live entity and call {@code setGravity(prior)}; a gone entity still
+ * has its ledger entry cleared, and an unknown prior defaults to {@code true} so gravity is never left
+ * off. The unload path skips re-resolution entirely — it restores on the event entity, which is
+ * mid-removal from the world index and can no longer be resolved by id.
  *
  * <h2>Threading</h2>
  *
@@ -118,6 +120,21 @@ public final class GBombRuntime {
         if (e != null) {
             e.setGravity(prior);
         }
+    }
+
+    /**
+     * The unload-safe restore path: restores gravity on the still-valid {@code entity} handed straight
+     * from the removal event, rather than re-resolving it by id. On the chunk/entity-unload path the
+     * entity is mid-removal from the world index, so {@link Bukkit#getEntity(UUID)} can return
+     * {@code null}; using the live event entity guarantees the corrected gravity flag is written before
+     * the {@code NoGravity} NBT serializes. Used by {@link GravityRestoreListener}. Keeps the ledger
+     * bookkeeping here: forgets the id and, only if it was tracked, sets the recorded prior flag — a
+     * forget of an untracked id is a harmless no-op that never touches gravity.
+     *
+     * @param entity the live, still-valid entity from the removal event; never {@code null}
+     */
+    public void restore(Entity entity) {
+        ledger.forget(entity.getUniqueId()).ifPresent(entity::setGravity);
     }
 
     /**
