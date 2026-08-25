@@ -9,16 +9,22 @@
  */
 package org.xpfarm.tntlibrary.geyser;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Installs the bomb Geyser Custom Blocks assets — the {@code custom_mappings} JSON and the Bedrock
@@ -52,8 +58,23 @@ public final class GeyserAssetInstaller {
     /** Bundled sub-path holding the Bedrock resource pack. */
     private static final String PACK_PREFIX = RESOURCE_ROOT + "pack/";
 
-    /** Folder name the Bedrock pack is written into, under Geyser's {@code packs/}. */
-    private static final String PACK_FOLDER = "tnt_library";
+    /**
+     * File name the Bedrock pack is written as, under Geyser's {@code packs/}. Geyser only loads packs
+     * that are {@code .zip}/{@code .mcpack} archive <em>files</em> — an unzipped directory in {@code
+     * packs/} is silently ignored (geysermc.org/wiki/geyser/packs) — so the pack ships as one archive,
+     * not the loose folder a prior version wrote.
+     */
+    private static final String PACK_MCPACK = "tnt_library.mcpack";
+
+    /** The loose folder a prior version wrote (and Geyser ignored); removed on install if present. */
+    private static final String LEGACY_PACK_FOLDER = "tnt_library";
+
+    /**
+     * A fixed modification time stamped on every archive entry (1980-01-01, the earliest a ZIP can
+     * encode) so an unchanged pack always serialises to byte-identical output — that keeps the
+     * "already up to date" comparison stable instead of rewriting the archive every startup.
+     */
+    private static final long STABLE_ENTRY_TIME = 315_532_800_000L;
 
     private final Logger logger;
     private final File jarFile;
@@ -79,20 +100,31 @@ public final class GeyserAssetInstaller {
         }
         try (ZipFile jar = new ZipFile(jarFile)) {
             int written = 0;
+            // The Bedrock pack must ship as one archive; collect its entries (sorted → deterministic
+            // archive bytes) rather than writing them loose, and copy the mapping JSON(s) as files.
+            Map<String, byte[]> packEntries = new TreeMap<>();
             Enumeration<? extends ZipEntry> entries = jar.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                if (entry.isDirectory() || !entry.getName().startsWith(RESOURCE_ROOT)) {
+                String name = entry.getName();
+                if (entry.isDirectory() || !name.startsWith(RESOURCE_ROOT)) {
                     continue;
                 }
-                File dest = destinationFor(entry.getName(), geyserDir);
-                if (dest == null) {
-                    continue;
-                }
-                if (copyIfChanged(jar, entry, dest)) {
-                    written++;
+                if (name.startsWith(MAPPINGS_PREFIX)) {
+                    File dest = new File(new File(geyserDir, "custom_mappings"),
+                            name.substring(MAPPINGS_PREFIX.length()));
+                    if (copyIfChanged(readAll(jar, entry), dest)) {
+                        written++;
+                    }
+                } else if (name.startsWith(PACK_PREFIX)) {
+                    // Key relative to geyser/pack/ so manifest.json lands at the archive root.
+                    packEntries.put(name.substring(PACK_PREFIX.length()), readAll(jar, entry));
                 }
             }
+            if (writePackArchiveIfChanged(packEntries, geyserDir)) {
+                written++;
+            }
+            removeLegacyPackFolder(geyserDir);
             if (written > 0) {
                 logger.info("Installed/updated " + written + " Geyser custom-block asset file(s) in "
                         + geyserDir.getName() + "; a Geyser restart applies them on first install.");
@@ -105,35 +137,71 @@ public final class GeyserAssetInstaller {
         }
     }
 
-    /** Maps a bundled {@code geyser/…} entry to its destination under Geyser's folder, or null to skip. */
-    private File destinationFor(String entryName, File geyserDir) {
-        if (entryName.startsWith(MAPPINGS_PREFIX)) {
-            String rel = entryName.substring(MAPPINGS_PREFIX.length());
-            return new File(new File(geyserDir, "custom_mappings"), rel);
+    /** Reads one JAR entry fully into a byte array. */
+    private static byte[] readAll(ZipFile jar, ZipEntry entry) throws IOException {
+        try (InputStream in = jar.getInputStream(entry)) {
+            return in.readAllBytes();
         }
-        if (entryName.startsWith(PACK_PREFIX)) {
-            String rel = entryName.substring(PACK_PREFIX.length());
-            return new File(new File(new File(geyserDir, "packs"), PACK_FOLDER), rel);
-        }
-        return null;
     }
 
-    /** Copies one entry to {@code dest} only if the content differs; returns whether it wrote. */
-    private boolean copyIfChanged(ZipFile jar, ZipEntry entry, File dest) throws IOException {
-        byte[] incoming;
-        try (InputStream in = jar.getInputStream(entry)) {
-            incoming = in.readAllBytes();
-        }
+    /** Writes {@code incoming} to {@code dest} only if the content differs; returns whether it wrote. */
+    private boolean copyIfChanged(byte[] incoming, File dest) throws IOException {
         Path destPath = dest.toPath();
-        if (dest.isFile()) {
-            byte[] existing = Files.readAllBytes(destPath);
-            if (Arrays.equals(existing, incoming)) {
-                return false;
-            }
+        if (dest.isFile() && Arrays.equals(Files.readAllBytes(destPath), incoming)) {
+            return false;
         }
         Files.createDirectories(destPath.getParent());
         Files.write(destPath, incoming);
         return true;
+    }
+
+    /**
+     * Serialises the collected pack entries into a single {@code .mcpack} archive under Geyser's {@code
+     * packs/} and writes it only when it differs from what is already there. Returns whether it wrote.
+     */
+    private boolean writePackArchiveIfChanged(Map<String, byte[]> packEntries, File geyserDir)
+            throws IOException {
+        if (packEntries.isEmpty()) {
+            return false; // no bundled pack (nothing to serve) — leave Geyser's packs/ untouched
+        }
+        byte[] archive = buildArchive(packEntries);
+        return copyIfChanged(archive, new File(new File(geyserDir, "packs"), PACK_MCPACK));
+    }
+
+    /** Builds a deterministic ZIP from {@code entries} (sorted, fixed timestamps) as {@code .mcpack}. */
+    private static byte[] buildArchive(Map<String, byte[]> entries) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
+            for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
+                ZipEntry zipEntry = new ZipEntry(entry.getKey());
+                zipEntry.setTime(STABLE_ENTRY_TIME);
+                zip.putNextEntry(zipEntry);
+                zip.write(entry.getValue());
+                zip.closeEntry();
+            }
+        }
+        return bytes.toByteArray();
+    }
+
+    /** Deletes the loose {@code packs/tnt_library/} folder a prior version wrote (Geyser ignored it). */
+    private void removeLegacyPackFolder(File geyserDir) {
+        File legacy = new File(new File(geyserDir, "packs"), LEGACY_PACK_FOLDER);
+        if (!legacy.isDirectory()) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(legacy.toPath())) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException ignored) {
+                    // best-effort cleanup; a leftover loose file is harmless (Geyser never reads it)
+                }
+            });
+            logger.info("Removed legacy unzipped Bedrock pack folder packs/" + LEGACY_PACK_FOLDER
+                    + " — Geyser loads the " + PACK_MCPACK + " archive instead.");
+        } catch (IOException e) {
+            logger.fine("Could not remove legacy pack folder: " + e.getMessage());
+        }
     }
 
     /**
