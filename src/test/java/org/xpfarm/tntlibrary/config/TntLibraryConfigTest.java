@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
+import org.xpfarm.tntlibrary.fbomb.FBombDefaults;
 import org.xpfarm.tntlibrary.gbomb.GBombDefaults;
 
 /**
@@ -134,7 +135,8 @@ final class TntLibraryConfigTest {
         // from this YAML, so it falls to the BombType default).
         assertEquals(new BombSettings(true, 3, 80, 64), config.bomb("twins"));
         assertEquals(new BombSettings(true, 4, 100, 0), config.bomb("smartbomb"));
-        assertEquals(new BombSettings(false, 0, 60, 0), config.bomb("fbomb"));
+        // fbomb radius is absent from this YAML, so it falls to the BombType default (6).
+        assertEquals(new BombSettings(false, 6, 60, 0), config.bomb("fbomb"));
         assertEquals(new BombSettings(false, 20, 60, 50), config.bomb("gbomb"));
         assertEquals(new BombSettings(false, 24, 100, 0), config.bomb("whiteout"));
 
@@ -546,6 +548,10 @@ final class TntLibraryConfigTest {
         GBombDefaults gbomb = GBombDefaults.from(shippedConfig, log[0]);
         assertEquals(1.2, gbomb.launchPower(), "shipped bombs.gbomb.launch-power");
         assertEquals(1000.0, gbomb.killDamage(), "shipped bombs.gbomb.kill-damage");
+
+        // The F-Bomb likewise reads its cinematic keys in-package (FBombDefaults); pin the shipped set.
+        assertEquals(new FBombDefaults(60, 12, 6, 48, 6, 8), FBombDefaults.from(shippedConfig, log[0]),
+                "shipped bombs.fbomb.* must equal these defaults");
 
         assertTrue(handler.level(Level.WARNING).isEmpty(),
                 "the shipped config.yml must not contain a value this plugin warns about");

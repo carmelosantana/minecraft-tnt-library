@@ -34,6 +34,8 @@ import org.xpfarm.tntlibrary.listener.IgnitionListener;
 import org.xpfarm.tntlibrary.listener.PlacementListener;
 import org.xpfarm.tntlibrary.protect.AllowAllProtection;
 import org.xpfarm.tntlibrary.protect.ProtectionService;
+import org.xpfarm.tntlibrary.fbomb.FBomb;
+import org.xpfarm.tntlibrary.fbomb.FBombFeature;
 import org.xpfarm.tntlibrary.gbomb.GBomb;
 import org.xpfarm.tntlibrary.gbomb.GBombFeature;
 import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
@@ -76,6 +78,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private ResourcePackDeliveryListener packDeliveryListener;
     private SmartBombFeature smartBomb;
     private GBombFeature gBomb;
+    private FBombFeature fBomb;
 
     /**
      * The shared, per-world register of placed Twins. Built once at construction and never rebuilt —
@@ -117,6 +120,8 @@ public final class TntLibraryPlugin extends JavaPlugin {
         this.smartBomb = new SmartBombFeature(this, config);
         smartBomb.enable();
         gBomb.enable();
+        this.fBomb = new FBombFeature(this, config);
+        fBomb.enable();
 
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
@@ -159,6 +164,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
         if (gBomb != null) {
             gBomb.disable(); // mandatory: restores gravity for any entity mid-sequence (Bukkit won't)
         }
+        if (fBomb != null) {
+            fBomb.disable(); // tears down any in-flight cinematic + sweeps its rig entities
+        }
         getLogger().info("TNTLibrary disabled.");
     }
 
@@ -191,6 +199,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
         this.smartBomb = new SmartBombFeature(this, config);
         smartBomb.enable();
         gBomb.enable();
+        if (fBomb != null) {
+            fBomb.disable();
+        }
+        this.fBomb = new FBombFeature(this, config);
+        fBomb.enable();
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
         }
@@ -234,6 +247,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
             // null runtime and an inert detonate. GBombFeature builds it with the injected fuse/params.
             registry.register(gBomb.gbomb());
         }
+        if (cfg.bomb(FBomb.ID).enabled()) {
+            // Unlike the G-Bomb, the F-Bomb's cinematic is driven by the ignition divert to the
+            // feature's director, so the registry entry is a plain item/recipe carrier.
+            registry.register(new FBomb(cfg.bomb(FBomb.ID).fuseTicks()));
+        }
     }
 
     /**
@@ -273,6 +291,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
     /** The location register used to heal drifted bomb blocks; stable across a reload. */
     public PlacedBombIndex placedBombIndex() {
         return placedBombIndex;
+    }
+
+    /** The F-Bomb feature (its director drives the ignition-diverted cinematic); null before enable. */
+    public FBombFeature fBomb() {
+        return fBomb;
     }
 
     /** The live detonation entry point; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */

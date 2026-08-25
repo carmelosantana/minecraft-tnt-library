@@ -28,7 +28,14 @@ bombs:
     time-trigger-default: false
   fbomb:
     enabled: false
+    radius: 6                 # blast radius of the final detonation
     fuse-ticks: 60
+    menace-ticks: 60          # total show length in ticks (summon + menace), floor 20; blast at the end
+    spawn-distance: 12        # how far from the bomb the apparition is summoned
+    spawn-height: 6           # how high above the bomb the apparition floats
+    bossbar-range: 48         # players within this range see the boss bar
+    skull-count: 6            # wither-skulls lobbed during the menace phase
+    skull-cadence-ticks: 8    # ticks between skulls
   gbomb:
     enabled: false
     radius: 20

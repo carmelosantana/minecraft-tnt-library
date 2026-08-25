@@ -34,6 +34,8 @@ import org.xpfarm.tntlibrary.TntLibraryPlugin;
 import org.xpfarm.tntlibrary.block.BombBlocks;
 import org.xpfarm.tntlibrary.command.Permissions;
 import org.xpfarm.tntlibrary.core.CustomTnt;
+import org.xpfarm.tntlibrary.fbomb.FBomb;
+import org.xpfarm.tntlibrary.fbomb.FBombFeature;
 import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
 import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
 
@@ -168,6 +170,13 @@ public final class IgnitionListener implements Listener {
             SmartBombFeature feature = plugin.smartBomb();
             if (feature != null) {
                 return feature.watcher().arm(block, igniter);   // arm instead of the plain instant fuse
+            }
+        }
+        if (FBomb.ID.equals(bomb.id())) {
+            FBombFeature feature = plugin.fBomb();
+            if (feature != null) {
+                // Divert to the cinematic (summon → menace → blast); it owns the fuse-equivalent timing.
+                return feature.director().summon(block, igniter);
             }
         }
         if (plugin.bombFuse().isBurning(block)) {

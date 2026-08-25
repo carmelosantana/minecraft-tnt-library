@@ -27,7 +27,7 @@ public enum BombType {
     WATERBOMB("waterbomb", true, "radius", 4, "fuse-ticks", 80, null, 0),
     TWINS("twins", true, "radius", 3, "fuse-ticks", 80, "max-pair-distance", 64),
     SMARTBOMB("smartbomb", true, "default-radius", 4, "default-delay-ticks", 100, null, 0),
-    FBOMB("fbomb", false, null, 0, "fuse-ticks", 60, null, 0),
+    FBOMB("fbomb", false, "radius", 6, "fuse-ticks", 60, null, 0),
     GBOMB("gbomb", false, "radius", 20, "fuse-ticks", 60, "hang-ticks", 50),
     WHITEOUT("whiteout", false, "pull-radius", 24, "fuse-ticks", 100, null, 0);
 
