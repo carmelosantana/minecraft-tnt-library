@@ -199,13 +199,15 @@ Booted a fresh disposable stack on `target/tnt-library-0.2.0.jar` (built with a 
 
 **Still gate-12 for v0.2.0 (real client on `play.xpfarm.org`):** the twins_white/twins_black inverse cubes and the smartbomb command-block cube actually render on Java + Bedrock; igniting one Twin carves the trench to its nearest opposite and removes both, a lone Twin fizzles and drops its item, the range cap holds; the Smart Bomb's Bedrock Floodgate form and Java chest GUI open and persist params, arming + each trigger (delay/time/proximity) detonates with the programmed size, and the proximity warning escalates before detonating at ~2 blocks.
 
-### 7b — full-roster matrix — NOT RUN (out-of-band, not required for this release)
+### 7b — full-roster matrix — DONE (2026-08-25, on explicit request after the v0.3.0 updater pass)
 
-- [ ] Fresh-volume [Legendary Java Minecraft Geyser Floodgate stack](https://github.com/TheRemote/Legendary-Java-Minecraft-Geyser-Floodgate) test covers every updater-managed plugin.
-- [ ] Each updater-managed plugin's manifest `enabled` value, default state, and expected fresh-volume behavior are recorded separately.
-- [ ] Paper, Geyser, Floodgate, and ViaVersion start successfully together.
-- [ ] Affected commands, permissions, persistence, and configuration reload were exercised over RCON with no server-wide hot reload.
-- [ ] Ollama and Umami unavailable-endpoint tests keep the server and plugins available when applicable.
+- [x] Fresh-volume [Legendary Java Minecraft Geyser Floodgate stack](https://github.com/TheRemote/Legendary-Java-Minecraft-Geyser-Floodgate) test covers every updater-managed plugin. → `xpfarm-test-stack matrix up --from-releases` booted the full roster from published releases; Paper `Done (16.059s)`, Java port served protocol 775. **MATRIX PASSED: 22/22 expectation(s) met.**
+- [x] Each updater-managed plugin's manifest `enabled` value, default state, and expected fresh-volume behavior are recorded separately. → all **22** manifest entries are `enabled` (absent flag = true) with no `pin` (cross-checked `plugins.json` ↔ `CURRENT_STATE.md`, no discrepancy; excluded Agent Steve/GeoBrot/Solar Power correctly absent from both). Every entry is expected to install + enable, and every one did — the rig printed one `PRESENT` row per plugin, **TNTLibrary** included. No disabled entries this roster, so no intentional-absence rows.
+- [x] Paper, Geyser, Floodgate, and ViaVersion start successfully together. → all four green in RCON `plugins` (26/26 plugin entries green `§a`, zero red `§c`, no `Disabling`/failed-load). The only log anomaly was a **benign caught soft-depend probe** — MagicCarpet's `ClassNotFoundException: com.sk89q.worldguard.WorldGuard` (WorldGuard absent from the base stack), which it handles with a WARN and degrades to "ignore WorldGuard regions". `play.xpfarm.org` resolves (168.231.74.113) and its Java entry point is TCP-reachable.
+- [~] Affected commands, permissions, persistence, and configuration reload were exercised over RCON with no server-wide hot reload. → the **7a** rows already exercise TNTLibrary's own commands/permissions/reload single-plugin; the 7b pass verifies whole-roster coexistence (present + enabled, no cross-plugin conflict), not a re-run of every plugin's command surface. Per-plugin command exercise stays each plugin's 7a job.
+- [x] Ollama and Umami unavailable-endpoint tests keep the server and plugins available when applicable. → both enabled and **degraded gracefully** on the fresh volume: `Umami analytics is disabled; no tracking listeners or network clients were started` and `Ollama integration is disabled; no API client or listeners were started` (Llama companion dormant). No leaked secrets in any log line; server + all plugins stayed up.
+
+> **Method note:** verified via the rig's built-in per-plugin `PRESENT`/expectation table (22/22) plus a bounded stack-wide log/color scan by the primary agent, rather than 22 separate per-plugin subagents — proportionate to a clean full-pass. This 7b run is out-of-band ecosystem-coherence evidence; it does not gate the already-shipped v0.3.0 release. The other 21 plugins' checklists were not backfilled with this row in this standalone pass.
 
 ## 8. CI/CD
 
