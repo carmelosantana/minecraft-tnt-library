@@ -27,17 +27,21 @@ display rig* pattern (reference plugin `tuesday-twister`): Geyser-safe, needs **
 pack for the mob**, and cannot wander off or grief. Reusable pieces from that reference:
 
 - `SpawnPlacement.forSummoner(origin, distance, height)` yaw math to place the rig at a safe offset and
-  face the igniter.
+  face the igniter. **Prefer open air:** pick the offset direction with the most clear space around the
+  bomb and bias upward so the apparition floats above the blast; the offset-selection/yaw math stays
+  pure, only the air-probe is Bukkit-edge.
 - **PDC source-tagging** so the detonation's `EntityExplodeEvent` (or tagged-`TNTPrimed` blast) is
   attributed to the F-Bomb for crater accounting / region protection.
 - **BossBar range-viewer management** — add players entering range, remove those leaving, clear on end.
 - **`WitherSkull` projectile config** for the menace volley (bounded count + cadence; modest, no
   runaway barrage).
-- A **`WorldSnapshot` block-restore system** so any blocks the `BlockDisplay` rig occupies/replaces are
-  captured on summon and restored on despawn (leave the world as found, minus the intended crater).
 
-The apparition takes **no damage and deals no melee**; its only offense is the telegraphed skull
-volley. It exists purely for the seconds between ignition and blast.
+**No terrain manipulation.** A `BlockDisplay`/`Interaction` rig replaces no world blocks and renders
+through solid blocks (occlusion does not hide it), so there is **no `WorldSnapshot`/pocket-clear** — a
+partly-embedded apparition is a purely cosmetic, ~3-second edge case handled by the open-air spawn
+preference above, not by carving and restoring terrain. The apparition takes **no damage and deals no
+melee**; its only offense is the telegraphed skull volley. It exists purely for the seconds between
+ignition and blast.
 
 ## Block & identity
 
@@ -53,10 +57,12 @@ volley. It exists purely for the seconds between ignition and blast.
   bounded scheduled task** drives the whole rig; cancel and fully tear down (despawn rig, clear boss
   bar, restore snapshot) on break / plugin disable / detonate so nothing leaks.
 - **detonate(ctx):** explode with the configured `radius` via the tagged-`TNTPrimed` path (like the
-  Water Bomb blast, no water fill) so region protection is respected consistently. The rig despawn +
-  `WorldSnapshot` restore happen here (or immediately after), before control returns.
+  Water Bomb blast, no water fill) so region protection is respected consistently. The rig despawn
+  happens here (or immediately after), before control returns.
 - Every entity/boss-bar/task the rig creates must be tracked and removed on **every** exit path,
-  including a server stop mid-cinematic — no orphaned `BlockDisplay`/`Interaction` entities, ever.
+  including a server stop mid-cinematic — no orphaned `BlockDisplay`/`Interaction` entities, ever. This
+  is satisfied by a PDC-tagged (`fbomb_rig`) entity orphan-sweep on enable plus `endAll()` on disable;
+  no block-state persistence is required (there is none to restore).
 
 ## Config (`bombs.fbomb`)
 
@@ -79,16 +85,15 @@ mob-specific client pack); do not add a client-pack requirement for the appariti
 ## Test obligations
 
 - **Unit (headless):** the cinematic state machine as a pure function (tick-counter → phase:
-  summon → menace → blast → cleanup); `SpawnPlacement.forSummoner` yaw/offset math; the skull-volley
-  schedule (count + cadence → fire ticks) as a pure fn; the `WorldSnapshot` capture/restore diff as
-  pure logic (given a set of occupied positions + prior states, restore is exact); the params
-  codec/validation. Keep every Bukkit touch at the edge so the core is headless-testable, as the Twins
-  and Smart Bomb packages do.
+  summon → menace → blast → cleanup); `SpawnPlacement.forSummoner` yaw/offset math (incl. the open-air
+  direction preference); the skull-volley schedule (count + cadence → fire ticks) as a pure fn; the
+  params codec/validation. Keep every Bukkit touch at the edge so the core is headless-testable, as the
+  Twins and Smart Bomb packages do.
 - **Gate-12 (client, on `play.xpfarm.org`):** the apparition renders as a Wither-like display on
   **Java and Bedrock**; the boss bar appears for in-range players and clears for those who leave;
   the skull volley fires and is survivable; the detonation craters at the configured size and is
-  attributed to the F-Bomb; the rig despawns and displaced terrain is restored; nothing is orphaned on
-  a mid-cinematic reload/stop.
+  attributed to the F-Bomb; the rig despawns cleanly; nothing is orphaned on a mid-cinematic
+  reload/stop.
 
 ## What the orchestrator wires (not the logic implementer)
 
@@ -96,6 +101,6 @@ mob-specific client pack); do not add a client-pack requirement for the appariti
 `plugin.yml` (`tntlibrary.use.fbomb` op/false; the `fbomb` command/permission placeholders exist),
 recipe + `TntLibraryPlugin` registration, and the resource-pack/Geyser pass (fbomb cube texture,
 model, blockstate override, Geyser mapping). The SDD implementer delivers the **isolated F-Bomb logic
-package** (rig + state machine, spawn placement, skull volley, world snapshot, boss-bar range viewer,
-detonate/cleanup) + tests against this contract, with **zero shared-file edits** — the same isolation
-the Twins and Smart Bomb tracks achieved.
+package** (rig + state machine, spawn placement, skull volley, boss-bar range viewer, detonate/cleanup)
++ tests against this contract, with **zero shared-file edits** — the same isolation the Twins and Smart
+Bomb tracks achieved.
