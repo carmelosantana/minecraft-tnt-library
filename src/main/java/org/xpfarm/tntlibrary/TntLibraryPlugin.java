@@ -34,6 +34,8 @@ import org.xpfarm.tntlibrary.listener.IgnitionListener;
 import org.xpfarm.tntlibrary.listener.PlacementListener;
 import org.xpfarm.tntlibrary.protect.AllowAllProtection;
 import org.xpfarm.tntlibrary.protect.ProtectionService;
+import org.xpfarm.tntlibrary.gbomb.GBomb;
+import org.xpfarm.tntlibrary.gbomb.GBombFeature;
 import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
 import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
 import org.xpfarm.tntlibrary.twins.PlacedTwinIndex;
@@ -73,6 +75,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private Detonator detonator;
     private ResourcePackDeliveryListener packDeliveryListener;
     private SmartBombFeature smartBomb;
+    private GBombFeature gBomb;
 
     /**
      * The shared, per-world register of placed Twins. Built once at construction and never rebuilt —
@@ -105,6 +108,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         this.protection = new AllowAllProtection();
 
         this.registry = new TntRegistry();
+        this.gBomb = new GBombFeature(this, config); // built before registration: registry holds gbomb()
         registerEnabledBombs(config);
 
         this.bombFuse = new BombFuse(this);
@@ -112,6 +116,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
 
         this.smartBomb = new SmartBombFeature(this, config);
         smartBomb.enable();
+        gBomb.enable();
 
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
@@ -151,6 +156,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
         if (smartBomb != null) {
             smartBomb.disable();
         }
+        if (gBomb != null) {
+            gBomb.disable(); // mandatory: restores gravity for any entity mid-sequence (Bukkit won't)
+        }
         getLogger().info("TNTLibrary disabled.");
     }
 
@@ -169,6 +177,10 @@ public final class TntLibraryPlugin extends JavaPlugin {
 
         reloadConfig();
         this.config = TntLibraryConfig.from(getConfig(), getLogger());
+        if (gBomb != null) {
+            gBomb.disable(); // tear down the old feature (restores gravity) before rebuilding
+        }
+        this.gBomb = new GBombFeature(this, config); // rebuilt before registration: registry holds gbomb()
         this.registry = new TntRegistry();
         registerEnabledBombs(config);
         this.detonator = new Detonator(this, config, protection);
@@ -178,6 +190,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         }
         this.smartBomb = new SmartBombFeature(this, config);
         smartBomb.enable();
+        gBomb.enable();
         for (CustomTnt bomb : registry.all()) {
             BombRecipes.register(this, bomb);
         }
@@ -215,6 +228,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
         }
         if (cfg.bomb(SmartBomb.ID).enabled()) {
             registry.register(new SmartBomb(cfg.bomb(SmartBomb.ID).fuseTicks()));
+        }
+        if (cfg.bomb(GBomb.ID).enabled() && gBomb != null) {
+            // The registry must hold the feature's runtime-bound instance — a plain new GBomb() has a
+            // null runtime and an inert detonate. GBombFeature builds it with the injected fuse/params.
+            registry.register(gBomb.gbomb());
         }
     }
 

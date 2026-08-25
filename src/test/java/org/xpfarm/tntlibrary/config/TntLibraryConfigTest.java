@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
+import org.xpfarm.tntlibrary.gbomb.GBombDefaults;
 
 /**
  * Unit tests for {@link TntLibraryConfig}. All configs are built from an in-memory YAML string with
@@ -538,6 +539,14 @@ final class TntLibraryConfigTest {
         assertEquals(ProtectionProvider.AUTO, config.provider());
         assertFalse(config.resourcePackConfigured(), "shipped resource-pack url/sha1 are empty");
         assertFalse(config.resourcePackRequired());
+
+        // The G-Bomb reads its two extra keys in-package (GBombDefaults), not via BombType, so pin the
+        // shipped bombs.gbomb.launch-power / kill-damage here too — a plain build with these keys absent
+        // would silently fall back to the same values, which is exactly what this guards against.
+        GBombDefaults gbomb = GBombDefaults.from(shippedConfig, log[0]);
+        assertEquals(1.2, gbomb.launchPower(), "shipped bombs.gbomb.launch-power");
+        assertEquals(1000.0, gbomb.killDamage(), "shipped bombs.gbomb.kill-damage");
+
         assertTrue(handler.level(Level.WARNING).isEmpty(),
                 "the shipped config.yml must not contain a value this plugin warns about");
     }

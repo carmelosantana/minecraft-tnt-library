@@ -34,6 +34,11 @@ bombs:
     radius: 20
     fuse-ticks: 60
     hang-ticks: 50
+    launch-power: 1.2     # upward launch magnitude (clamped 0..3; kept modest per Paper #13270)
+    kill-damage: 1000     # server-side FALL finisher damage applied on the slam. This is the kill
+                          # guarantee: on Bedrock via Geyser the float/launch is weak or absent
+                          # (setGravity(false) is not translated; player velocity is client-authoritative),
+                          # but this finisher lands regardless of client physics. Accepted, documented.
   whiteout:
     enabled: false
     pull-radius: 24
