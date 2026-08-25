@@ -126,15 +126,30 @@ public final class GBombSequenceTask extends BukkitRunnable {
     private void doSlam() {
         Vector slamVelocity = toBukkit(GBombPhysics.slamVelocity());
         for (UUID id : launched) {
-            // Restore gravity before any finisher work, even if the entity is gone (clears the ledger).
-            runtime.restore(id);
-            Entity e = Bukkit.getEntity(id);
-            if (!(e instanceof LivingEntity le) || !le.isValid()) {
+            // Concurrent-overlap fidelity: if the ledger entry is already gone, another overlapping
+            // task (which shared this entity) has already restored it to its true prior and finished.
+            // Skip so we never re-restore with the .orElse(true) fallback and wrongly force gravity ON
+            // on an entity that was naturally gravity-off before either bomb.
+            if (!ledger.contains(id)) {
                 continue;
             }
-            le.setVelocity(slamVelocity);
-            le.setFallDistance(GBombPhysics.slamFallDistance());
-            GBombFinisher.finish(le, le.getLocation(), params.killDamage());
+            // Per-entity isolation: a deterministically-throwing entity op must not propagate out of
+            // run() (which would freeze elapsed in SLAM and strand every entity after the thrower).
+            // Log and move on so one bad entity cannot block the rest.
+            try {
+                // Restore gravity before any finisher work, even if the entity is gone (clears ledger).
+                runtime.restore(id);
+                Entity e = Bukkit.getEntity(id);
+                if (!(e instanceof LivingEntity le) || !le.isValid()) {
+                    continue;
+                }
+                le.setVelocity(slamVelocity);
+                le.setFallDistance(GBombPhysics.slamFallDistance());
+                GBombFinisher.finish(le, le.getLocation(), params.killDamage());
+            } catch (RuntimeException ex) {
+                Bukkit.getLogger().warning(
+                        "[GBomb] slam failed for entity " + id + "; skipping: " + ex);
+            }
         }
     }
 
