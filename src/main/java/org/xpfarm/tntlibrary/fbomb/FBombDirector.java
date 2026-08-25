@@ -100,29 +100,37 @@ public final class FBombDirector {
                 base, SpawnPlacement.DIRECTION_YAWS[best], params.spawnDistance(), params.spawnHeight());
 
         UUID id = UUID.randomUUID();
-        FBombRig rig = new FBombRig(plugin, id);
-        BossBar bossBar = Bukkit.createBossBar("F-Bomb", BarColor.RED, BarStyle.SOLID);
-        rig.spawn(rigCenter);
+        FBombRig rig = null;
+        BossBar bossBar = null;
 
-        // The rig entities now exist but are not yet tracked in `active`. If anything between here
-        // and registration throws, tear down the just-spawned rig + boss bar so the RIG_KEY-tagged
-        // entities can never leak untracked until the next cleanupOrphans sweep.
+        // The try now covers the entity-creating steps (rig.spawn, boss bar creation) as well as
+        // registration. If anything in here throws — including partway through rig.spawn — tear down
+        // whatever was already spawned so the RIG_KEY-tagged entities can never leak untracked until
+        // the next cleanupOrphans sweep.
         try {
+            rig = new FBombRig(plugin, id);
+            bossBar = Bukkit.createBossBar("F-Bomb", BarColor.RED, BarStyle.SOLID);
+            rig.spawn(rigCenter);
+
             FBombShow show = new FBombShow(plugin, id, block, rigCenter, params, rig, bossBar, igniter);
             active.put(id, show);
             locations.put(key, id);
         } catch (Throwable t) {
             active.remove(id);
             locations.remove(key);
-            try {
-                rig.remove();
-            } catch (Throwable ignored) {
-                // best-effort rollback
+            if (rig != null) {
+                try {
+                    rig.remove();
+                } catch (Throwable ignored) {
+                    // best-effort rollback
+                }
             }
-            try {
-                bossBar.removeAll();
-            } catch (Throwable ignored) {
-                // best-effort rollback
+            if (bossBar != null) {
+                try {
+                    bossBar.removeAll();
+                } catch (Throwable ignored) {
+                    // best-effort rollback
+                }
             }
             throw t;
         }

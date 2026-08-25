@@ -15,7 +15,7 @@ package org.xpfarm.tntlibrary.fbomb;
  * <p>Every field is normalized in the compact constructor so an out-of-range instance is
  * <em>unrepresentable</em>: callers never have to re-validate what they read back. Clamping in one
  * place — rather than at each edit site — is the single source of truth for the bounds documented
- * in the field table below, so the contract cannot drift.
+ * on each constant below, so the contract cannot drift.
  *
  * <p>{@code radius} and {@code fuseTicks} arrive from {@code BombSettings} (the shared per-block
  * settings every bomb type reads); the remaining fields arrive from {@code FBombDefaults} (the
@@ -49,16 +49,16 @@ public record FBombParams(
     /** Longest menace phase, in ticks (one minute at 20 tps). */
     public static final int MENACE_TICKS_MAX = 1200;
 
-    /** Closest distance, in blocks, a skull may spawn from the F-Bomb. */
+    /** Closest distance, in blocks, the rig (apparition) may spawn from the F-Bomb. */
     public static final int SPAWN_DISTANCE_MIN = 2;
 
-    /** Farthest distance, in blocks, a skull may spawn from the F-Bomb. */
+    /** Farthest distance, in blocks, the rig (apparition) may spawn from the F-Bomb. */
     public static final int SPAWN_DISTANCE_MAX = 32;
 
-    /** Lowest vertical offset, in blocks, a skull may spawn at. */
+    /** Lowest vertical offset, in blocks, the rig (apparition) may spawn at. */
     public static final int SPAWN_HEIGHT_MIN = 0;
 
-    /** Highest vertical offset, in blocks, a skull may spawn at. */
+    /** Highest vertical offset, in blocks, the rig (apparition) may spawn at. */
     public static final int SPAWN_HEIGHT_MAX = 32;
 
     /** Smallest boss bar visibility range, in blocks. */
@@ -79,7 +79,7 @@ public record FBombParams(
     /** Longest interval, in ticks, between skull spawns. */
     public static final int SKULL_CADENCE_TICKS_MAX = 200;
 
-    /** Fallback baseline the codec restores for missing or garbage persisted input. */
+    /** The baseline F-Bomb parameters used when config supplies no override. */
     public static final FBombParams DEFAULT = new FBombParams(6, 60, 60, 12, 6, 48, 6, 8);
 
     /** Normalizes each field so the resulting record always satisfies its documented bounds. */
