@@ -57,7 +57,7 @@ public final class WhiteoutRuntime {
         this.params = Objects.requireNonNull(params, "params");
     }
 
-    /** The shared effect ledger, exposed for the cleanup listener. */
+    /** The single effect ledger shared by every in-flight task; exposed as an accessor for wiring/diagnostics. */
     public EffectLedger ledger() {
         return ledger;
     }

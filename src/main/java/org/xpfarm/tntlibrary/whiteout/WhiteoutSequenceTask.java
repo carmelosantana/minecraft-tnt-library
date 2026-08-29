@@ -51,7 +51,8 @@ public final class WhiteoutSequenceTask extends BukkitRunnable {
     /**
      * Sets the sweep DURATION: {@code sweepTicks = ceil(ringCount / RINGS_PER_TICK)} SWEEP ticks (see
      * {@code WhiteoutRuntime#detonate}). {@link #doSweep} then spreads the columns evenly across those
-     * ticks. Larger → fewer, heavier ticks; smaller → more, lighter ticks. 4 gives ~6 ticks at radius 24.
+     * ticks. Larger → fewer, heavier ticks; smaller → more, lighter ticks. 4 gives ~43 ticks at radius 24
+     * (ceil(ringCount(24)≈170 / 4)).
      */
     public static final int RINGS_PER_TICK = 4;
 
@@ -173,7 +174,7 @@ public final class WhiteoutSequenceTask extends BukkitRunnable {
      * <p>The columns are converted in center-out order across exactly {@link #sweepTicks} SWEEP ticks,
      * {@code ceil(columns.length / sweepTicks)} per tick. This is deliberate on two counts the owner
      * settled: (1) it caps each tick's {@code setBlockData} count (~{@code columns.length/sweepTicks},
-     * e.g. ~300 at radius 24) so there is no single-tick hitch — the whole reason the transform is
+     * e.g. ~43 at radius 24 (≈1809 columns / ≈43 sweep ticks)) so there is no single-tick hitch — the whole reason the transform is
      * spread rather than done at once; (2) an even center-out slice per tick makes the scar visibly
      * sweep outward. Do NOT front-load the batch — converting most of the disk in the first tick
      * reintroduces the hitch and defeats the sweep. {@code ceil} guarantees the cursor reaches
