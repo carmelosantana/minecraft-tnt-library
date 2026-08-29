@@ -1,5 +1,5 @@
 {
-  "_comment": "TNT Library note_block override. The \"\" variant is the universal fallback: it specifies zero properties, so it matches EVERY note_block state and keeps them all rendering as vanilla minecraft:block/note_block. Each additional key lists specific properties; because a more-specific variant (more properties matched) wins over a less-specific one, only the exact claimed state is re-skinned while all other states stay vanilla. This is the same partial-key + override technique Oraxen/Nexo use to preserve vanilla note blocks. Active bombs: waterbomb note=19, twins_white note=20, twins_black note=18, smartbomb note=21, fbomb note=22, gbomb note=23. Reserved for later phases (whiteout 24) are left out until those bombs ship; adding them will not affect vanilla states.",
+  "_comment": "TNT Library note_block override. The \"\" variant is the universal fallback: it specifies zero properties, so it matches EVERY note_block state and keeps them all rendering as vanilla minecraft:block/note_block. Each additional key lists specific properties; because a more-specific variant (more properties matched) wins over a less-specific one, only the exact claimed state is re-skinned while all other states stay vanilla. This is the same partial-key + override technique Oraxen/Nexo use to preserve vanilla note blocks. Active bombs: waterbomb note=19, twins_white note=20, twins_black note=18, smartbomb note=21, fbomb note=22, gbomb note=23, whiteout note=24. Adding a claimed state does not affect vanilla note-block states.",
   "variants": {
     "": { "model": "minecraft:block/note_block" },
     "instrument=pling,note=19,powered=false": { "model": "tnt_library:block/waterbomb" },
@@ -7,6 +7,7 @@
     "instrument=pling,note=18,powered=false": { "model": "tnt_library:block/twins_black" },
     "instrument=pling,note=21,powered=false": { "model": "tnt_library:block/smartbomb" },
     "instrument=pling,note=22,powered=false": { "model": "tnt_library:block/fbomb" },
-    "instrument=pling,note=23,powered=false": { "model": "tnt_library:block/gbomb" }
+    "instrument=pling,note=23,powered=false": { "model": "tnt_library:block/gbomb" },
+    "instrument=pling,note=24,powered=false": { "model": "tnt_library:block/whiteout" }
   }
 }

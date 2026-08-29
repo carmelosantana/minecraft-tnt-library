@@ -70,6 +70,13 @@ PALETTE = {
     "R": (0x6E, 0x3A, 0xA6, 255),  # violet ring / trace
     "Z": (0xC8, 0x6A, 0xF0, 255),  # magenta glow (arrow, rings)
     "Y": (0xE9, 0xD2, 0xFF, 255),  # pale glow highlight
+    # --- White Out (whiteout vortex): rimed white/ice body + cold cyan frost cracks + bright core.
+    # Every A-Z key is taken by the six earlier bombs, so this palette uses digit keys. ---
+    "0": (0x5E, 0x7C, 0x99, 255),  # glacial rime border / outline
+    "1": (0xBE, 0xD2, 0xE2, 255),  # frost bevel / cap band (pale blue-grey)
+    "2": (0xE8, 0xF2, 0xF9, 255),  # ice body (near-white, blue-biased)
+    "3": (0xFF, 0xFF, 0xFF, 255),  # snow-bright core / glint
+    "4": (0x86, 0xD3, 0xEC, 255),  # cold cyan frost crack / vortex arm
 }
 
 # --- Water Bomb -------------------------------------------------------------------------------
@@ -443,6 +450,69 @@ GBOMB_BOTTOM = [
     "VVVVVVVVVVVVVVVV",
 ]
 
+# --- White Out (whiteout vortex) ---------------------------------------------------------------
+# The inverse of the G-Bomb: instead of a launch arrow, an imploding frost vortex. TOP is a
+# four-armed cyan frost-cross converging on a snow-bright 2x2 eye over a rimed white field; SIDE
+# carries the vanilla-TNT banded read as frosted caps with a small bright core; BOTTOM is a calmer
+# ice field with a few cyan crack dashes. 1-px glacial-rime border on every face.
+
+WHITEOUT_TOP = [
+    "0000000000000000",
+    "0111111111111110",
+    "0122222442222210",
+    "0122222442222210",
+    "0122422442242210",
+    "0122222442222210",
+    "0122222442222210",
+    "0144444334444410",
+    "0144444334444410",
+    "0122222442222210",
+    "0122222442222210",
+    "0122422442242210",
+    "0122222442222210",
+    "0122222442222210",
+    "0111111111111110",
+    "0000000000000000",
+]
+
+WHITEOUT_SIDE = [
+    "0000000000000000",
+    "0111111111111110",
+    "0111111111111110",
+    "0111111111111110",
+    "0222222222222220",
+    "0222242222422220",
+    "0222222222222220",
+    "0222224334222220",
+    "0222224334222220",
+    "0222222222222220",
+    "0222242222422220",
+    "0222222222222220",
+    "0111111111111110",
+    "0111111111111110",
+    "0111111111111110",
+    "0000000000000000",
+]
+
+WHITEOUT_BOTTOM = [
+    "0000000000000000",
+    "0222222222222220",
+    "0222222222222220",
+    "0224422222222220",
+    "0222222222222220",
+    "0222222222244220",
+    "0222222222222220",
+    "0222442222222220",
+    "0222222222222220",
+    "0222222224422220",
+    "0222222222222220",
+    "0244222222222220",
+    "0222222222222220",
+    "0222222222222220",
+    "0222222222222220",
+    "0000000000000000",
+]
+
 # Registry: {bomb name: {face: pixel-map}}. Faces render to <name>_<face>.png in both trees.
 BOMBS = {
     "waterbomb": {
@@ -474,6 +544,11 @@ BOMBS = {
         "top": GBOMB_TOP,
         "side": GBOMB_SIDE,
         "bottom": GBOMB_BOTTOM,
+    },
+    "whiteout": {
+        "top": WHITEOUT_TOP,
+        "side": WHITEOUT_SIDE,
+        "bottom": WHITEOUT_BOTTOM,
     },
 }
 

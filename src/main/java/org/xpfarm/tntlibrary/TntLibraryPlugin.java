@@ -38,6 +38,8 @@ import org.xpfarm.tntlibrary.fbomb.FBomb;
 import org.xpfarm.tntlibrary.fbomb.FBombFeature;
 import org.xpfarm.tntlibrary.gbomb.GBomb;
 import org.xpfarm.tntlibrary.gbomb.GBombFeature;
+import org.xpfarm.tntlibrary.whiteout.WhiteOut;
+import org.xpfarm.tntlibrary.whiteout.WhiteoutFeature;
 import org.xpfarm.tntlibrary.smartbomb.SmartBomb;
 import org.xpfarm.tntlibrary.smartbomb.SmartBombFeature;
 import org.xpfarm.tntlibrary.twins.PlacedTwinIndex;
@@ -79,6 +81,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
     private SmartBombFeature smartBomb;
     private GBombFeature gBomb;
     private FBombFeature fBomb;
+    private WhiteoutFeature whiteOut;
 
     /**
      * The shared, per-world register of placed Twins. Built once at construction and never rebuilt —
@@ -112,6 +115,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
 
         this.registry = new TntRegistry();
         this.gBomb = new GBombFeature(this, config); // built before registration: registry holds gbomb()
+        this.whiteOut = new WhiteoutFeature(this, config); // built before registration: registry holds whiteout()
         registerEnabledBombs(config);
 
         this.bombFuse = new BombFuse(this);
@@ -120,6 +124,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         this.smartBomb = new SmartBombFeature(this, config);
         smartBomb.enable();
         gBomb.enable();
+        whiteOut.enable();
         this.fBomb = new FBombFeature(this, config);
         fBomb.enable();
 
@@ -167,6 +172,9 @@ public final class TntLibraryPlugin extends JavaPlugin {
         if (fBomb != null) {
             fBomb.disable(); // tears down any in-flight cinematic + sweeps its rig entities
         }
+        if (whiteOut != null) {
+            whiteOut.disable(); // cancels in-flight vortices + clears freeze/debuffs (Bukkit won't)
+        }
         getLogger().info("TNTLibrary disabled.");
     }
 
@@ -189,6 +197,10 @@ public final class TntLibraryPlugin extends JavaPlugin {
             gBomb.disable(); // tear down the old feature (restores gravity) before rebuilding
         }
         this.gBomb = new GBombFeature(this, config); // rebuilt before registration: registry holds gbomb()
+        if (whiteOut != null) {
+            whiteOut.disable(); // cancel any in-flight vortex + clear freeze/debuffs before rebuilding
+        }
+        this.whiteOut = new WhiteoutFeature(this, config); // rebuilt before registration: registry holds whiteout()
         this.registry = new TntRegistry();
         registerEnabledBombs(config);
         this.detonator = new Detonator(this, config, protection);
@@ -199,6 +211,7 @@ public final class TntLibraryPlugin extends JavaPlugin {
         this.smartBomb = new SmartBombFeature(this, config);
         smartBomb.enable();
         gBomb.enable();
+        whiteOut.enable();
         if (fBomb != null) {
             fBomb.disable();
         }
@@ -252,6 +265,12 @@ public final class TntLibraryPlugin extends JavaPlugin {
             // feature's director, so the registry entry is a plain item/recipe carrier.
             registry.register(new FBomb(cfg.bomb(FBomb.ID).fuseTicks()));
         }
+        if (cfg.bomb(WhiteOut.ID).enabled() && whiteOut != null) {
+            // Like the G-Bomb, the registry must hold the feature's runtime-bound instance — a plain
+            // new WhiteOut() has a null runtime and an inert detonate. WhiteoutFeature builds it with
+            // the injected fuse/params.
+            registry.register(whiteOut.whiteout());
+        }
     }
 
     /**
@@ -296,6 +315,11 @@ public final class TntLibraryPlugin extends JavaPlugin {
     /** The F-Bomb feature (its director drives the ignition-diverted cinematic); null before enable. */
     public FBombFeature fBomb() {
         return fBomb;
+    }
+
+    /** The White Out feature (owns the vortex runtime + effect ledger); null before enable, rebuilt on reload. */
+    public WhiteoutFeature whiteOut() {
+        return whiteOut;
     }
 
     /** The live detonation entry point; rebuilt by {@link #reloadPlugin()}, so always read it fresh. */

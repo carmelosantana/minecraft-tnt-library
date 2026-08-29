@@ -48,8 +48,23 @@ bombs:
                           # but this finisher lands regardless of client physics. Accepted, documented.
   whiteout:
     enabled: false
-    pull-radius: 24
+    pull-radius: 24       # horizontal reach of the vortex, and the radius of the permanent scar.
+                          # WARNING: the scar is PERMANENT and sizable — at radius 24 it whites over
+                          # roughly 1,800 surface columns to white_concrete and never reverts. Size
+                          # this to an arena, not to spawn.
     fuse-ticks: 100
+    pull-power: 1.0       # escalating inward per-tick velocity ceiling (clamped 0..3). Bedrock note:
+                          # player velocity is client-authoritative, so the pull may read weaker on
+                          # Bedrock; the kill does NOT depend on it (see kill-damage).
+    pull-ticks: 60        # the ACTIVE pull window — how long entities are dragged inward before the
+                          # collapse (clamped 1..1200). Distinct from effect-ticks below.
+    kill-damage: 1000     # server-side FREEZE finisher damage applied to every caught entity at the
+                          # collapse (clamped 1..1000000). This is the kill guarantee: as with the
+                          # G-Bomb, client physics can't be trusted on Bedrock, but this finisher lands
+                          # regardless of client rendering.
+    effect-ticks: 100     # how long the blindness/slowness/freeze debuff LINGERS (clamped 1..1200).
+                          # Distinct from pull-ticks: nearly every caught entity dies at the collapse,
+                          # so this mainly governs a rare survivor of the finisher.
 
 # Region / claim protection. When respect-regions is true, explosions, the Water Bomb crater-fill,
 # and the White Out pull skip protected regions where a supported provider is present.

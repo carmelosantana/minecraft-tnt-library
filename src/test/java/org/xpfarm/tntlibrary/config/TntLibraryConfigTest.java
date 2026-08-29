@@ -34,6 +34,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.xpfarm.tntlibrary.fbomb.FBombDefaults;
 import org.xpfarm.tntlibrary.gbomb.GBombDefaults;
+import org.xpfarm.tntlibrary.whiteout.WhiteoutDefaults;
 
 /**
  * Unit tests for {@link TntLibraryConfig}. All configs are built from an in-memory YAML string with
@@ -552,6 +553,11 @@ final class TntLibraryConfigTest {
         // The F-Bomb likewise reads its cinematic keys in-package (FBombDefaults); pin the shipped set.
         assertEquals(new FBombDefaults(60, 12, 6, 48, 6, 8), FBombDefaults.from(shippedConfig, log[0]),
                 "shipped bombs.fbomb.* must equal these defaults");
+
+        // White Out reads pull-power / pull-ticks / kill-damage / effect-ticks in-package
+        // (WhiteoutDefaults); pin the shipped set so a drift between config.yml and the fallback is caught.
+        assertEquals(new WhiteoutDefaults(1.0, 60, 1000.0, 100), WhiteoutDefaults.from(shippedConfig, log[0]),
+                "shipped bombs.whiteout.* must equal these defaults");
 
         assertTrue(handler.level(Level.WARNING).isEmpty(),
                 "the shipped config.yml must not contain a value this plugin warns about");

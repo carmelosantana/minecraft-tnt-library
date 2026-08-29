@@ -130,6 +130,27 @@
               "face_dimming": true
             }
           }
+        },
+        "instrument=pling,note=24,powered=false": {
+          "unit_cube": true,
+          "destructible_by_mining": 1,
+          "material_instances": {
+            "up": {
+              "texture": "tnt_library_whiteout_top",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "down": {
+              "texture": "tnt_library_whiteout_bottom",
+              "render_method": "opaque",
+              "face_dimming": true
+            },
+            "*": {
+              "texture": "tnt_library_whiteout_side",
+              "render_method": "opaque",
+              "face_dimming": true
+            }
+          }
         }
       }
     }

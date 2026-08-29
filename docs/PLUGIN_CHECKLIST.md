@@ -53,9 +53,9 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 - `PlayerInteractEvent` — flint & steel on a bomb block → ignite; any other interaction is swallowed so the note never cycles; also Smart Bomb programming interactions.
 - `BlockIgniteEvent` / `BlockRedstoneEvent` — fire/lava/redstone ignition of a placed bomb block (real-TNT parity).
 - `BlockPhysicsEvent` / `NotePlayEvent` / `BlockBreakEvent` — keep the bomb block locked (instrument can't re-derive), silent, and dropping the bomb item on break.
-- `EntityExplodeEvent` / `BlockExplodeEvent` — attribute craters to a bomb via PDC; enforce region protection; drive Water Bomb crater-fill and White Out non-destruction.
+- `EntityExplodeEvent` / `BlockExplodeEvent` — attribute craters to a bomb via PDC; enforce region protection; drive Water Bomb crater-fill and White Out non-cratering / transform-not-remove (surface is reskinned to white_concrete, never destroyed).
 - `PrepareItemCraftEvent` / recipe events — gate crafting behind per-bomb permission + config toggle.
-- `EntityDamageEvent` (cause `FALL`) — G-Bomb fall-damage accounting; White Out impact damage.
+- `EntityDamageEvent` — G-Bomb fall-damage accounting (cause `FALL`); White Out collapse kill (cause `FREEZE`, the server-side finisher).
 - `PlayerMoveEvent` or scheduled proximity scan — Smart Bomb proximity sensing + warning sound.
 - `PlayerQuitEvent` / chunk-unload — clean up boss bars and in-flight phase tasks (placed bombs are real blocks and persist; no rig cleanup needed).
 
@@ -101,7 +101,7 @@ A custom-TNT **framework** plus a growing set of creative explosives for `play.x
 6. **F-Bomb:** ignition spawns the fake-Wither display rig at a safe offset from the blast center (no real `EntityType.WITHER`); boss bar appears for in-range players.
 7. **G-Bomb:** entities in radius have gravity toggled and are launched, then slammed; a full-health unarmored **Java and Bedrock** player both die, the Bedrock kill coming from the server-side `DamageSource[FALL]` finisher even without client float.
 8. **Smart Bomb:** programmable size/delay/time-of-day/proximity honored; proximity mode plays a warning sound before triggering.
-9. **White Out:** loose + living entities (incl. underwater animals, boats, items, leaves) in radius are pulled to center, take fire damage, then flung outward; stone and behind-door contents are spared; no block-destroying explosion.
+9. **White Out:** loose + living entities in radius are pulled inward with escalating velocity and hit with blindness/slowness/freeze during the pull window, then at the collapse every caught entity is killed by a guaranteed server-side `DamageSource[FREEZE]` finisher (lands on Bedrock even without client physics, like the G-Bomb); the ground is ring-swept into a **permanent white_concrete scar** — non-cratering / transform-not-remove, so region-protected columns, other bombs' blocks, and containers/tile-entities are skipped rather than destroyed. Region gating is inert until a real region-aware `ProtectionService` is wired (ecosystem item), so today it converts/affects everything.
 10. **Dual-edition assets:** one `item_model` value renders the custom art on both Java (resource pack) and Bedrock (Geyser mapping); `PluginDescriptorTest`-style checks pass; JAR ships a self-consistent pack URL+SHA-1 from CI.
 11. **Bedrock/Geyser safety:** all bomb feedback (warnings, boss UI, programming) works without Java-only attributes; Bedrock players get graceful degradation where client physics differ (documented in Known limitations).
 

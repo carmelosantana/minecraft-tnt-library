@@ -21,6 +21,9 @@
     "tnt_library_fbomb_bottom": { "textures": "textures/blocks/fbomb_bottom" },
     "tnt_library_gbomb_top": { "textures": "textures/blocks/gbomb_top" },
     "tnt_library_gbomb_side": { "textures": "textures/blocks/gbomb_side" },
-    "tnt_library_gbomb_bottom": { "textures": "textures/blocks/gbomb_bottom" }
+    "tnt_library_gbomb_bottom": { "textures": "textures/blocks/gbomb_bottom" },
+    "tnt_library_whiteout_top": { "textures": "textures/blocks/whiteout_top" },
+    "tnt_library_whiteout_side": { "textures": "textures/blocks/whiteout_side" },
+    "tnt_library_whiteout_bottom": { "textures": "textures/blocks/whiteout_bottom" }
   }
 }
